@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>批量添加经销商原型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            background: rgba(0, 0, 0, 0.5);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: #fff;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: #f5f5f5;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #999;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #e8e8e8;
+            color: #666;
+        }
+
+        .modal-body {
+            padding: 20px 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* 搜索和筛选区域 */
+        .filter-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .filter-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .province-select-wrapper,
+        .city-select-wrapper {
+            position: relative;
+            min-width: 140px;
+        }
+
+        .province-select,
+        .city-select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 1px solid #d9d9d9;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #333;
+            background: #fff;
+            cursor: pointer;
+            appearance: none;
+            padding-right: 32px;
+            transition: all 0.2s;
+        }
+
+        .province-select:hover,
+        .city-select:hover {
+            border-color: #40a9ff;
+        }
+
+        .province-select:focus,
+        .city-select:focus {
+            outline: none;
+            border-color: #40a9ff;
+            box-shadow: 0 0 0 3px rgba(64, 169, 255, 0.1);
+        }
+
+        .city-select:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
+            color: #999;
+        }
+
+        .select-arrow {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .search-wrapper {
+            flex: 1;
+            position: relative;
+            min-width: 200px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 14px 10px 38px;
+            border: 1px solid #d9d9d9;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #333;
+            transition: all 0.2s;
+        }
+
+        .search-input:hover {
+            border-color: #40a9ff;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #40a9ff;
+            box-shadow: 0 0 0 3px rgba(64, 169, 255, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 16px;
+        }
+
+        .search-btn {
+            padding: 10px 24px;
+            background: #1890ff;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .search-btn:hover {
+            background: #40a9ff;
+        }
+
+        /* 批量操作按钮 */
+        .batch-add-btn {
+            padding: 8px 20px;
+            background: #52c41a;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: auto;
+        }
+
+        .batch-add-btn:hover {
+            background: #73d13d;
+        }
+
+        .batch-add-btn:disabled {
+            background: #d9d9d9;
+            cursor: not-allowed;
+        }
+
+        .batch-remove-btn {
+            padding: 8px 20px;
+            background: #ff4d4f;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: auto;
+        }
+
+        .batch-remove-btn:hover {
+            background: #ff7875;
+        }
+
+        .batch-remove-btn:disabled {
+            background: #d9d9d9;
+            cursor: not-allowed;
+        }
+
+        /* 表格样式 */
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dealer-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+        }
+
+        .dealer-table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 2px solid #f0f0f0;
+            background: #fafafa;
+        }
+
+        .dealer-table th:first-child {
+            width: 40px;
+            text-align: center;
+        }
+
+        .dealer-table th:last-child {
+            text-align: center;
+            width: 100px;
+        }
+
+        .dealer-table td {
+            padding: 12px 16px;
+            font-size: 14px;
+            color: #333;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .dealer-table td:first-child {
+            text-align: center;
+        }
+
+        .dealer-table td:last-child {
+            text-align: center;
+        }
+
+        .dealer-table tr:hover {
+            background: #f5f5f5;
+        }
+
+        .dealer-table tr.added {
+            background: #f6ffed;
+        }
+
+        .dealer-table tr.added td {
+            color: #999;
+        }
+
+        /* 复选框 */
+        .checkbox {
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d9d9d9;
+            border-radius: 4px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            background: #fff;
+        }
+
+        .checkbox:hover {
+            border-color: #1890ff;
+        }
+
+        .checkbox.checked {
+            background: #1890ff;
+            border-color: #1890ff;
+        }
+
+        .checkbox.checked::after {
+            content: '✓';
+            color: #fff;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .checkbox.disabled {
+            background: #f5f5f5;
+            border-color: #d9d9d9;
+            cursor: not-allowed;
+        }
+
+        /* 按钮 */
+        .add-btn {
+            padding: 6px 20px;
+            background: #52c41a;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .add-btn:hover {
+            background: #73d13d;
+        }
+
+        .added-label {
+            padding: 6px 16px;
+            background: #f5f5f5;
+            color: #999;
+            border-radius: 6px;
+            font-size: 14px;
+            display: inline-block;
+        }
+
+        .remove-btn {
+            padding: 6px 20px;
+            background: #ff4d4f;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .remove-btn:hover {
+            background: #ff7875;
+        }
+
+        /* 空状态 */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-size: 14px;
+            border-bottom: none;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            padding: 12px 24px;
+            background: #52c41a;
+            color: #fff;
+            border-radius: 8px;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 2000;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.error {
+            background: #ff4d4f;
+        }
+
+        /* 已添加区域 */
+        .added-section {
+            margin-top: 24px;
+            padding-top: 24px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .added-section .section-title {
+            color: #52c41a;
+        }
+
+        /* 响应式 */
+        @media (max-width: 640px) {
+            .filter-row {
+                flex-direction: column;
+            }
+
+            .province-select-wrapper,
+            .city-select-wrapper,
+            .search-wrapper {
+                width: 100%;
+            }
+        }
+
+        /* 动画 */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dealer-table tr {
+            animation: fadeIn 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">添加经销商</h2>
+                <button class="modal-close">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- 筛选和搜索区域 -->
+                <div class="filter-section">
+                    <div class="filter-row">
+                        <div class="province-select-wrapper">
+                            <select class="province-select" id="provinceSelect">
+                                <option value="">全部省份</option>
+                                <option value="guangdong">广东省</option>
+                                <option value="zhejiang">浙江省</option>
+                                <option value="jiangsu">江苏省</option>
+                                <option value="fujian">福建省</option>
+                                <option value="shandong">山东省</option>
+                                <option value="hunan">湖南省</option>
+                                <option value="hubei">湖北省</option>
+                                <option value="sichuan">四川省</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                        <div class="city-select-wrapper">
+                            <select class="city-select" id="citySelect" disabled>
+                                <option value="">全部城市</option>
+                            </select>
+                            <span class="select-arrow">▼</span>
+                        </div>
+                    </div>
+                    <div class="filter-row">
+                        <div class="search-wrapper">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" class="search-input" id="searchInput" placeholder="请输入经销商编码或名称">
+                        </div>
+                        <button class="search-btn" id="searchBtn">搜索</button>
+                    </div>
+                </div>
+
+                <!-- 可选经销商列表 -->
+                <div class="section-title">
+                    <span>可选经销商</span>
+                    <button class="batch-add-btn" id="batchAddBtn" disabled>批量添加</button>
+                </div>
+                <table class="dealer-table" id="dealerTable">
+                    <thead>
+                        <tr>
+                            <th>
+                                <span class="checkbox" id="selectAll"></span>
+                            </th>
+                            <th>编码</th>
+                            <th>名称</th>
+                            <th>省份</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dealerTableBody">
+                        <!-- 动态生成 -->
+                    </tbody>
+                </table>
+
+                <!-- 已添加的经销商 -->
+                <div class="added-section">
+                    <div class="section-title">
+                        <span>已添加的经销商</span>
+                        <button class="batch-remove-btn" id="batchRemoveBtn" disabled>批量删除</button>
+                    </div>
+                    <table class="dealer-table" id="addedTable">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <span class="checkbox" id="selectAllAdded"></span>
+                                </th>
+                                <th>编码</th>
+                                <th>名称</th>
+                                <th>省份</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="addedTableBody">
+                            <!-- 动态生成 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 城市数据
+        const cityData = {
+            guangdong: ['广州市', '深圳市', '东莞市', '佛山市'],
+            zhejiang: ['杭州市', '宁波市', '温州市'],
+            jiangsu: ['南京市', '苏州市', '无锡市'],
+            fujian: ['福州市', '厦门市'],
+            shandong: ['济南市', '青岛市'],
+            hunan: ['长沙市'],
+            hubei: ['武汉市'],
+            sichuan: ['成都市']
+        };
+
+        // 模拟经销商数据
+        const allDealers = [
+            { id: 'DP008', name: '广州安装部', province: 'guangdong', provinceName: '广东省', city: '广州市', added: false },
+            { id: 'J1185', name: '广州直营店索菲亚-装企', province: 'guangdong', provinceName: '广东省', city: '广州市', added: false },
+            { id: 'Y1168', name: '广州直营店索菲亚', province: 'guangdong', provinceName: '广东省', city: '广州市', added: true },
+            { id: 'GD001', name: '深圳福田店', province: 'guangdong', provinceName: '广东省', city: '深圳市', added: false },
+            { id: 'GD002', name: '东莞南城店', province: 'guangdong', provinceName: '广东省', city: '东莞市', added: false },
+            { id: 'GD003', name: '佛山顺德店', province: 'guangdong', provinceName: '广东省', city: '佛山市', added: false },
+            { id: 'ZJ001', name: '杭州西湖店', province: 'zhejiang', provinceName: '浙江省', city: '杭州市', added: false },
+            { id: 'ZJ002', name: '宁波鄞州店', province: 'zhejiang', provinceName: '浙江省', city: '宁波市', added: false },
+            { id: 'ZJ003', name: '温州鹿城店', province: 'zhejiang', provinceName: '浙江省', city: '温州市', added: false },
+            { id: 'JS001', name: '南京鼓楼店', province: 'jiangsu', provinceName: '江苏省', city: '南京市', added: false },
+            { id: 'JS002', name: '苏州工业园店', province: 'jiangsu', provinceName: '江苏省', city: '苏州市', added: false },
+            { id: 'JS003', name: '无锡梁溪店', province: 'jiangsu', provinceName: '江苏省', city: '无锡市', added: false },
+            { id: 'FJ001', name: '福州鼓楼店', province: 'fujian', provinceName: '福建省', city: '福州市', added: false },
+            { id: 'FJ002', name: '厦门思明店', province: 'fujian', provinceName: '福建省', city: '厦门市', added: false },
+            { id: 'SD001', name: '济南历下店', province: 'shandong', provinceName: '山东省', city: '济南市', added: false },
+            { id: 'SD002', name: '青岛市南店', province: 'shandong', provinceName: '山东省', city: '青岛市', added: false },
+            { id: 'HN001', name: '长沙芙蓉店', province: 'hunan', provinceName: '湖南省', city: '长沙市', added: false },
+            { id: 'HB001', name: '武汉江汉店', province: 'hubei', provinceName: '湖北省', city: '武汉市', added: false },
+            { id: 'SC001', name: '成都锦江店', province: 'sichuan', provinceName: '四川省', city: '成都市', added: false },
+        ];
+
+        let selectedDealers = new Set();
+        let selectedAddedDealers = new Set();
+        let currentDealers = [];
+        let hasSearched = false;
+
+        // DOM 元素
+        const provinceSelect = document.getElementById('provinceSelect');
+        const citySelect = document.getElementById('citySelect');
+        const searchInput = document.getElementById('searchInput');
+        const searchBtn = document.getElementById('searchBtn');
+        const dealerTableBody = document.getElementById('dealerTableBody');
+        const addedTableBody = document.getElementById('addedTableBody');
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const selectAllAddedCheckbox = document.getElementById('selectAllAdded');
+        const batchAddBtn = document.getElementById('batchAddBtn');
+        const batchRemoveBtn = document.getElementById('batchRemoveBtn');
+        const toast = document.getElementById('toast');
+
+        // 更新城市下拉框
+        function updateCitySelect(province) {
+            citySelect.innerHTML = '<option value="">全部城市</option>';
+            
+            if (province && cityData[province]) {
+                cityData[province].forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city;
+                    option.textContent = city;
+                    citySelect.appendChild(option);
+                });
+                citySelect.disabled = false;
+            } else {
+                citySelect.disabled = true;
+            }
+        }
+
+        // 渲染可选经销商列表
+        function renderDealerTable() {
+            // 未搜索时显示引导提示
+            if (!hasSearched) {
+                dealerTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <div>请选择省份/城市或输入关键词查询经销商</div>
+                        </td>
+                    </tr>
+                `;
+                batchAddBtn.style.visibility = 'visible';
+                batchAddBtn.disabled = true;
+                selectAllCheckbox.classList.remove('checked');
+                return;
+            }
+
+            const filteredDealers = currentDealers.filter(d => !d.added);
+
+            if (filteredDealers.length === 0) {
+                dealerTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <div>暂无符合条件的经销商</div>
+                        </td>
+                    </tr>
+                `;
+                batchAddBtn.style.visibility = 'visible';
+                batchAddBtn.disabled = true;
+                selectAllCheckbox.classList.remove('checked');
+                return;
+            }
+
+            batchAddBtn.style.visibility = 'visible';
+            dealerTableBody.innerHTML = filteredDealers.map(dealer => `
+                <tr data-id="${dealer.id}">
+                    <td>
+                        <span class="checkbox ${selectedDealers.has(dealer.id) ? 'checked' : ''}" 
+                              data-id="${dealer.id}" 
+                              onclick="toggleSelect('${dealer.id}')"></span>
+                    </td>
+                    <td>${dealer.id}</td>
+                    <td>${dealer.name}</td>
+                    <td>${dealer.provinceName}</td>
+                    <td>
+                        <button class="add-btn" onclick="addDealer('${dealer.id}')">添加</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            updateSelectAllState();
+            updateBatchAddBtn();
+        }
+
+        // 渲染已添加经销商列表
+        function renderAddedTable() {
+            // 未搜索时不显示已添加列表
+            if (!hasSearched) {
+                addedTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <div>未添加经销商</div>
+                        </td>
+                    </tr>
+                `;
+                batchRemoveBtn.style.visibility = 'hidden';
+                batchRemoveBtn.disabled = true;
+                selectAllAddedCheckbox.classList.remove('checked');
+                return;
+            }
+
+            const addedDealers = currentDealers.filter(d => d.added);
+
+            if (addedDealers.length === 0) {
+                addedTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="empty-state">
+                            <div>未添加经销商</div>
+                        </td>
+                    </tr>
+                `;
+                batchRemoveBtn.style.visibility = 'visible';
+                batchRemoveBtn.disabled = true;
+                selectAllAddedCheckbox.classList.remove('checked');
+                return;
+            }
+
+            batchRemoveBtn.style.visibility = 'visible';
+            addedTableBody.innerHTML = addedDealers.map(dealer => `
+                <tr>
+                    <td>
+                        <span class="checkbox ${selectedAddedDealers.has(dealer.id) ? 'checked' : ''}" 
+                              data-id="${dealer.id}" 
+                              onclick="toggleSelectAdded('${dealer.id}')"></span>
+                    </td>
+                    <td>${dealer.id}</td>
+                    <td>${dealer.name}</td>
+                    <td>${dealer.provinceName}</td>
+                    <td>
+                        <button class="remove-btn" onclick="removeDealer('${dealer.id}')">移除</button>
+                    </td>
+                </tr>
+            `).join('');
+
+            updateSelectAllAddedState();
+            updateBatchRemoveBtn();
+        }
+
+        // 切换可选列表选中状态
+        function toggleSelect(dealerId) {
+            if (selectedDealers.has(dealerId)) {
+                selectedDealers.delete(dealerId);
+            } else {
+                selectedDealers.add(dealerId);
+            }
+            renderDealerTable();
+        }
+
+        // 切换已添加列表选中状态
+        function toggleSelectAdded(dealerId) {
+            if (selectedAddedDealers.has(dealerId)) {
+                selectedAddedDealers.delete(dealerId);
+            } else {
+                selectedAddedDealers.add(dealerId);
+            }
+            renderAddedTable();
+        }
+
+        // 全选/取消全选（可选列表）
+        function toggleSelectAll() {
+            const filteredDealers = currentDealers.filter(d => !d.added);
+            const allSelected = filteredDealers.every(d => selectedDealers.has(d.id));
+            
+            if (allSelected) {
+                filteredDealers.forEach(d => selectedDealers.delete(d.id));
+            } else {
+                filteredDealers.forEach(d => selectedDealers.add(d.id));
+            }
+            
+            renderDealerTable();
+        }
+
+        // 全选/取消全选（已添加列表）
+        function toggleSelectAllAdded() {
+            const addedDealers = currentDealers.filter(d => d.added);
+            const allSelected = addedDealers.every(d => selectedAddedDealers.has(d.id));
+            
+            if (allSelected) {
+                addedDealers.forEach(d => selectedAddedDealers.delete(d.id));
+            } else {
+                addedDealers.forEach(d => selectedAddedDealers.add(d.id));
+            }
+            
+            renderAddedTable();
+        }
+
+        // 更新全选框状态（可选列表）
+        function updateSelectAllState() {
+            const filteredDealers = currentDealers.filter(d => !d.added);
+            const allSelected = filteredDealers.length > 0 && filteredDealers.every(d => selectedDealers.has(d.id));
+            
+            selectAllCheckbox.classList.toggle('checked', allSelected);
+        }
+
+        // 更新全选框状态（已添加列表）
+        function updateSelectAllAddedState() {
+            const addedDealers = currentDealers.filter(d => d.added);
+            const allSelected = addedDealers.length > 0 && addedDealers.every(d => selectedAddedDealers.has(d.id));
+            
+            selectAllAddedCheckbox.classList.toggle('checked', allSelected);
+        }
+
+        // 更新批量添加按钮状态
+        function updateBatchAddBtn() {
+            batchAddBtn.disabled = selectedDealers.size === 0;
+        }
+
+        // 更新批量删除按钮状态
+        function updateBatchRemoveBtn() {
+            batchRemoveBtn.style.visibility = 'visible';
+            batchRemoveBtn.disabled = selectedAddedDealers.size === 0;
+        }
+
+        // 添加单个经销商
+        function addDealer(dealerId) {
+            const dealer = currentDealers.find(d => d.id === dealerId);
+            if (dealer) {
+                dealer.added = true;
+                selectedDealers.delete(dealerId);
+                renderDealerTable();
+                renderAddedTable();
+                showToast(`已成功添加：${dealer.name}`);
+            }
+        }
+
+        // 批量添加
+        function batchAdd() {
+            const dealersToAdd = currentDealers.filter(d => selectedDealers.has(d.id) && !d.added);
+            
+            if (dealersToAdd.length === 0) {
+                showToast('请选择要添加的经销商', 'error');
+                return;
+            }
+
+            dealersToAdd.forEach(dealer => {
+                dealer.added = true;
+            });
+
+            const count = dealersToAdd.length;
+            selectedDealers.clear();
+            
+            renderDealerTable();
+            renderAddedTable();
+            showToast(`成功添加 ${count} 个经销商`);
+        }
+
+        // 批量删除
+        function batchRemove() {
+            const dealersToRemove = currentDealers.filter(d => selectedAddedDealers.has(d.id) && d.added);
+            
+            if (dealersToRemove.length === 0) {
+                showToast('请选择要删除的经销商', 'error');
+                return;
+            }
+
+            dealersToRemove.forEach(dealer => {
+                dealer.added = false;
+            });
+
+            const count = dealersToRemove.length;
+            selectedAddedDealers.clear();
+            
+            renderDealerTable();
+            renderAddedTable();
+            showToast(`成功删除 ${count} 个经销商`);
+        }
+
+        // 移除经销商
+        function removeDealer(dealerId) {
+            const dealer = currentDealers.find(d => d.id === dealerId);
+            if (dealer) {
+                dealer.added = false;
+                selectedAddedDealers.delete(dealerId);
+                renderDealerTable();
+                renderAddedTable();
+                showToast(`已移除：${dealer.name}`);
+            }
+        }
+
+        // 筛选经销商
+        function filterDealers() {
+            const province = provinceSelect.value;
+            const city = citySelect.value;
+            const keyword = searchInput.value.trim().toLowerCase();
+
+            // 未选择省份且未输入关键词时，不查询
+            if (!province && !keyword) {
+                showToast('请选择省份/城市或输入关键词后查询', 'error');
+                return;
+            }
+
+            hasSearched = true;
+
+            currentDealers = allDealers.filter(dealer => {
+                const matchProvince = !province || dealer.province === province;
+                const matchCity = !city || dealer.city === city;
+                const matchKeyword = !keyword || 
+                    dealer.id.toLowerCase().includes(keyword) || 
+                    dealer.name.toLowerCase().includes(keyword);
+                return matchProvince && matchCity && matchKeyword;
+            });
+
+            selectedDealers.clear();
+            renderDealerTable();
+        }
+
+        // 显示 Toast
+        function showToast(message, type = 'success') {
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 事件监听
+        provinceSelect.addEventListener('change', () => {
+            updateCitySelect(provinceSelect.value);
+            citySelect.value = '';
+            filterDealers();
+        });
+
+        citySelect.addEventListener('click', () => {
+            if (!provinceSelect.value) {
+                showToast('请先选择省份', 'error');
+                provinceSelect.focus();
+            }
+        });
+
+        citySelect.addEventListener('change', filterDealers);
+        searchBtn.addEventListener('click', filterDealers);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') filterDealers();
+        });
+        selectAllCheckbox.addEventListener('click', toggleSelectAll);
+        selectAllAddedCheckbox.addEventListener('click', toggleSelectAllAdded);
+        batchAddBtn.addEventListener('click', batchAdd);
+        batchRemoveBtn.addEventListener('click', batchRemove);
+
+        // 关闭弹窗
+        document.querySelector('.modal-close').addEventListener('click', () => {
+            showToast('弹窗已关闭（原型演示）');
+        });
+
+        // 初始化
+        renderDealerTable();
+        renderAddedTable();
+    </script>
+</body>
+</html>
