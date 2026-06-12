@@ -301,6 +301,25 @@
             background: #f5f5f5;
         }
 
+        /* 表格滚动容器 */
+        .table-scroll-wrapper {
+            max-height: 260px;
+            overflow-y: auto;
+            border: 1px solid #f0f0f0;
+            border-radius: 8px;
+        }
+
+        .table-scroll-wrapper .dealer-table {
+            margin-bottom: 0;
+        }
+
+        .table-scroll-wrapper .dealer-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: #fafafa;
+        }
+
         /* 复选框 */
         .checkbox {
             width: 18px;
@@ -381,104 +400,6 @@
             color: #999;
             font-size: 14px;
             border-bottom: none;
-        }
-
-        /* 分页 */
-        .pagination {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 0 0 0;
-            font-size: 14px;
-            color: #666;
-        }
-
-        .pagination-info {
-            color: #999;
-            font-size: 13px;
-        }
-
-        .pagination-controls {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .page-btn {
-            min-width: 32px;
-            height: 32px;
-            padding: 0 8px;
-            border: 1px solid #d9d9d9;
-            border-radius: 6px;
-            background: #fff;
-            color: #333;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .page-btn:hover:not(:disabled):not(.active) {
-            border-color: #1890ff;
-            color: #1890ff;
-        }
-
-        .page-btn.active {
-            background: #1890ff;
-            border-color: #1890ff;
-            color: #fff;
-        }
-
-        .page-btn:disabled {
-            color: #d9d9d9;
-            cursor: not-allowed;
-            border-color: #d9d9d9;
-        }
-
-        .page-ellipsis {
-            min-width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #999;
-            font-size: 14px;
-        }
-
-        /* 跨页全选提示条 */
-        .select-all-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 16px;
-            background: #e6f7ff;
-            border: 1px solid #91d5ff;
-            border-radius: 6px;
-            margin-bottom: 12px;
-            font-size: 13px;
-            color: #1890ff;
-        }
-
-        .select-all-bar .select-all-link {
-            color: #1890ff;
-            cursor: pointer;
-            text-decoration: underline;
-            font-weight: 500;
-        }
-
-        .select-all-bar .select-all-link:hover {
-            color: #40a9ff;
-        }
-
-        .select-all-bar .clear-link {
-            color: #ff4d4f;
-            cursor: pointer;
-        }
-
-        .select-all-bar .clear-link:hover {
-            text-decoration: underline;
         }
 
         /* Toast */
@@ -594,35 +515,12 @@
                     <span>可选经销商</span>
                     <button class="batch-add-btn" id="batchAddBtn" disabled>批量添加</button>
                 </div>
-                <div id="selectAllBar" class="select-all-bar" style="display: none;"></div>
-                <table class="dealer-table" id="dealerTable">
-                    <thead>
-                        <tr>
-                            <th>
-                                <span class="checkbox" id="selectAll"></span>
-                            </th>
-                            <th>编码</th>
-                            <th>名称</th>
-                            <th>省份</th>
-                            <th>操作</th>
-                        </tr>
-                    </thead>
-                    <tbody id="dealerTableBody">
-                    </tbody>
-                </table>
-                <div id="pagination" class="pagination" style="display: none;"></div>
-
-                <!-- 已添加的经销商 -->
-                <div class="added-section">
-                    <div class="section-title">
-                        <span>已添加的经销商</span>
-                        <button class="batch-remove-btn" id="batchRemoveBtn" disabled>批量删除</button>
-                    </div>
-                    <table class="dealer-table" id="addedTable">
+                <div class="table-scroll-wrapper">
+                    <table class="dealer-table" id="dealerTable">
                         <thead>
                             <tr>
                                 <th>
-                                    <span class="checkbox" id="selectAllAdded"></span>
+                                    <span class="checkbox" id="selectAll"></span>
                                 </th>
                                 <th>编码</th>
                                 <th>名称</th>
@@ -630,9 +528,34 @@
                                 <th>操作</th>
                             </tr>
                         </thead>
-                        <tbody id="addedTableBody">
+                        <tbody id="dealerTableBody">
                         </tbody>
                     </table>
+                </div>
+
+                <!-- 已添加的经销商 -->
+                <div class="added-section">
+                    <div class="section-title">
+                        <span>已添加的经销商</span>
+                        <button class="batch-remove-btn" id="batchRemoveBtn" disabled>批量删除</button>
+                    </div>
+                    <div class="table-scroll-wrapper">
+                        <table class="dealer-table" id="addedTable">
+                            <thead>
+                                <tr>
+                                    <th>
+                                        <span class="checkbox" id="selectAllAdded"></span>
+                                    </th>
+                                    <th>编码</th>
+                                    <th>名称</th>
+                                    <th>省份</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="addedTableBody">
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -705,9 +628,6 @@
         let selectedAddedDealers = new Set();
         let currentDealers = [];
         let hasSearched = false;
-        let currentPage = 1;
-        const pageSize = 5; // 原型演示用5条，实际可配20-50
-        let isAllSelected = false; // 跨页全选标记
 
         // DOM 元素
         const provinceSelect = document.getElementById('provinceSelect');
@@ -721,8 +641,6 @@
         const batchAddBtn = document.getElementById('batchAddBtn');
         const batchRemoveBtn = document.getElementById('batchRemoveBtn');
         const toast = document.getElementById('toast');
-        const paginationEl = document.getElementById('pagination');
-        const selectAllBar = document.getElementById('selectAllBar');
 
         // 更新城市下拉框
         function updateCitySelect(province) {
@@ -740,22 +658,12 @@
             }
         }
 
-        // 获取当前页可选经销商
+        // 获取可选经销商（过滤掉已添加的）
         function getFilteredDealers() {
             return currentDealers.filter(d => !d.added);
         }
 
-        function getPageDealers() {
-            const filtered = getFilteredDealers();
-            const start = (currentPage - 1) * pageSize;
-            return filtered.slice(start, start + pageSize);
-        }
-
-        function getTotalPages() {
-            return Math.max(1, Math.ceil(getFilteredDealers().length / pageSize));
-        }
-
-        // 渲染可选经销商列表
+        // 渲染可选经销商列表（过滤已添加的）
         function renderDealerTable() {
             if (!hasSearched) {
                 dealerTableBody.innerHTML = `
@@ -765,8 +673,6 @@
                 batchAddBtn.disabled = true;
                 batchAddBtn.textContent = '批量添加';
                 selectAllCheckbox.classList.remove('checked', 'indeterminate');
-                paginationEl.style.display = 'none';
-                selectAllBar.style.display = 'none';
                 return;
             }
 
@@ -780,18 +686,11 @@
                 batchAddBtn.disabled = true;
                 batchAddBtn.textContent = '批量添加';
                 selectAllCheckbox.classList.remove('checked', 'indeterminate');
-                paginationEl.style.display = 'none';
                 return;
             }
 
-            // 校正当前页
-            const totalPages = getTotalPages();
-            if (currentPage > totalPages) currentPage = totalPages;
-
-            const pageDealers = getPageDealers();
-
             batchAddBtn.style.visibility = 'visible';
-            dealerTableBody.innerHTML = pageDealers.map(dealer => `
+            dealerTableBody.innerHTML = filtered.map(dealer => `
                 <tr data-id="${dealer.id}">
                     <td>
                         <span class="checkbox ${selectedDealers.has(dealer.id) ? 'checked' : ''}"
@@ -809,44 +708,6 @@
 
             updateSelectAllState();
             updateBatchAddBtn();
-            renderPagination();
-        }
-
-        // 渲染分页（仅上一页/下一页）
-        function renderPagination() {
-            const filtered = getFilteredDealers();
-            const total = filtered.length;
-            const totalPages = getTotalPages();
-
-            if (totalPages <= 1) {
-                paginationEl.style.display = 'none';
-                return;
-            }
-
-            paginationEl.style.display = 'flex';
-
-            paginationEl.innerHTML = `
-                <span class="pagination-info">共 ${total} 条，第 ${currentPage}/${totalPages} 页</span>
-                <div class="pagination-controls">
-                    <button class="page-btn" ${currentPage <= 1 ? 'disabled' : ''} onclick="goPage(${currentPage - 1})">上一页</button>
-                    <button class="page-btn" ${currentPage >= totalPages ? 'disabled' : ''} onclick="goPage(${currentPage + 1})">下一页</button>
-                </div>
-            `;
-        }
-
-        // 跳转页面
-        function goPage(page) {
-            const totalPages = getTotalPages();
-            if (page < 1 || page > totalPages) return;
-            currentPage = page;
-            renderDealerTable();
-        }
-
-        // 清除全部选择（供全选取消使用）
-        function clearAllSelection() {
-            selectedDealers.clear();
-            isAllSelected = false;
-            renderDealerTable();
         }
 
         // 渲染已添加经销商列表
@@ -916,21 +777,15 @@
             renderAddedTable();
         }
 
-        // 全选/取消全选（可选列表 - 当前页）
+        // 全选/取消全选（可选列表）
         function toggleSelectAll() {
-            const pageDealers = getPageDealers();
-            const allPageSelected = pageDealers.length > 0 && pageDealers.every(d => selectedDealers.has(d.id));
+            const filtered = getFilteredDealers();
+            const allSelected = filtered.length > 0 && filtered.every(d => selectedDealers.has(d.id));
 
-            if (allPageSelected) {
-                // 取消当前页全选
-                pageDealers.forEach(d => selectedDealers.delete(d.id));
-                isAllSelected = false;
+            if (allSelected) {
+                filtered.forEach(d => selectedDealers.delete(d.id));
             } else {
-                // 选中当前页
-                pageDealers.forEach(d => selectedDealers.add(d.id));
-                // 检查是否所有页都选中了
-                const filtered = getFilteredDealers();
-                isAllSelected = filtered.length > 0 && filtered.every(d => selectedDealers.has(d.id));
+                filtered.forEach(d => selectedDealers.add(d.id));
             }
 
             renderDealerTable();
@@ -950,21 +805,21 @@
             renderAddedTable();
         }
 
-        // 更新全选框状态（可选列表 - 当前页）
+        // 更新全选框状态（可选列表）
         function updateSelectAllState() {
-            const pageDealers = getPageDealers();
-            if (pageDealers.length === 0) {
+            const filtered = getFilteredDealers();
+            if (filtered.length === 0) {
                 selectAllCheckbox.classList.remove('checked', 'indeterminate');
                 return;
             }
 
-            const allPageSelected = pageDealers.every(d => selectedDealers.has(d.id));
-            const somePageSelected = pageDealers.some(d => selectedDealers.has(d.id));
+            const allSelected = filtered.every(d => selectedDealers.has(d.id));
+            const someSelected = filtered.some(d => selectedDealers.has(d.id));
 
             selectAllCheckbox.classList.remove('checked', 'indeterminate');
-            if (allPageSelected) {
+            if (allSelected) {
                 selectAllCheckbox.classList.add('checked');
-            } else if (somePageSelected) {
+            } else if (someSelected) {
                 selectAllCheckbox.classList.add('indeterminate');
             }
         }
@@ -996,9 +851,6 @@
             if (dealer) {
                 dealer.added = true;
                 selectedDealers.delete(dealerId);
-                // 重新计算是否还是全选
-                const filtered = getFilteredDealers();
-                isAllSelected = filtered.length > 0 && filtered.every(d => selectedDealers.has(d.id));
                 renderDealerTable();
                 renderAddedTable();
                 showToast(`已成功添加：${dealer.name}`);
@@ -1020,11 +872,6 @@
 
             const count = dealersToAdd.length;
             selectedDealers.clear();
-            isAllSelected = false;
-
-            // 重新校正页码
-            const totalPages = getTotalPages();
-            if (currentPage > totalPages) currentPage = totalPages;
 
             renderDealerTable();
             renderAddedTable();
@@ -1076,9 +923,7 @@
             }
 
             hasSearched = true;
-            currentPage = 1;
             selectedDealers.clear();
-            isAllSelected = false;
 
             currentDealers = allDealers.filter(dealer => {
                 const matchProvince = !province || dealer.province === province;
