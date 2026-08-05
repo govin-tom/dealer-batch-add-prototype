@@ -298,16 +298,36 @@
     margin-left: 6px;
   }
 
-  /* 案例 Tab */
+  /* 案例 Tab - 横向滚动 */
+  .case-tabs-wrap {
+    position: relative;
+    margin-bottom: 14px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .case-tabs-wrap::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 28px;
+    background: linear-gradient(90deg, transparent, #fff);
+    pointer-events: none;
+    z-index: 1;
+  }
   .case-tabs {
     display: flex;
-    border-bottom: 1px solid #f0f0f0;
-    margin-bottom: 14px;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    position: relative;
   }
+  .case-tabs::-webkit-scrollbar { display: none; }
   .case-tab {
-    flex: 1;
-    padding: 8px 4px;
+    flex-shrink: 0;
+    padding: 8px 14px;
     font-size: 13px;
     font-weight: 500;
     color: #999;
@@ -600,10 +620,12 @@
   </div>
 
   <!-- 案例 Tab -->
-  <div class="case-tabs">
-    <button class="case-tab active" data-case="0">保利红馆</button>
-    <button class="case-tab" data-case="1">骏景花园</button>
-    <button class="case-tab" data-case="2">锦绣香江</button>
+  <div class="case-tabs-wrap">
+    <div class="case-tabs">
+      <button class="case-tab active" data-case="0">保利红馆·现代简约</button>
+      <button class="case-tab" data-case="1">骏景花园·北欧风格</button>
+      <button class="case-tab" data-case="2">锦绣香江·新中式</button>
+    </div>
   </div>
 
   <!-- 案例一：3张图 -->
