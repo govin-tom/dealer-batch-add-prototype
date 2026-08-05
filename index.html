@@ -355,11 +355,22 @@
     margin-bottom: -2px;
     transition: all 0.3s;
     white-space: nowrap;
+    position: relative;
   }
-  .case-tab:hover { color: #e8541e; }
+  .case-tab + .case-tab::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 16px;
+    background: #ddd;
+  }
+  .case-tab:hover { color: #C8493B; }
   .case-tab.active {
-    color: #e8541e;
-    border-bottom-color: #e8541e;
+    color: #C8493B;
+    border-bottom-color: #C8493B;
     font-weight: 700;
   }
 
