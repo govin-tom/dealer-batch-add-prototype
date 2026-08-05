@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>索菲亚手机端原型 - 精选案例</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f5f5;
+    color: #333;
+    font-size: 14px;
+    line-height: 1.6;
+    max-width: 420px;
+    margin: 0 auto;
+    position: relative;
+    min-height: 100vh;
+  }
+  a { text-decoration: none; color: inherit; }
+  img { display: block; max-width: 100%; }
+  ul, li { list-style: none; }
+
+  /* ===== 顶部导航栏 ===== */
+  .nav-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: #fff;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  .nav-icon { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; color: #333; }
+  .nav-icon svg { width: 20px; height: 20px; fill: currentColor; }
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .nav-logo-text {
+    background: #C8493B;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 3px;
+    letter-spacing: 1px;
+  }
+  .nav-logo-sub { font-size: 10px; color: #999; }
+
+  /* ===== Banner图 ===== */
+  .banner {
+    width: 100%;
+    height: 200px;
+    background: linear-gradient(135deg, #d4b896, #c4a884);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .banner-placeholder {
+    color: rgba(255,255,255,0.6);
+    font-size: 13px;
+    text-align: center;
+  }
+  .banner-3d-btn {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    background: rgba(255,255,255,0.9);
+    color: #C8493B;
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid #C8493B;
+    font-weight: 500;
+  }
+
+  /* ===== 门店信息 ===== */
+  .store-info {
+    background: #fff;
+    padding: 16px;
+  }
+  .store-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 10px;
+  }
+  .store-info-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 6px;
+  }
+  .store-info-row svg { width: 14px; height: 14px; fill: #999; flex-shrink: 0; margin-top: 2px; }
+
+  /* ===== 预约表单 ===== */
+  .booking-card {
+    margin: 10px 12px;
+    background: linear-gradient(135deg, #ffe8d8, #ffd4c0);
+    border-radius: 12px;
+    padding: 20px 16px;
+  }
+  .booking-title {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: #C8493B;
+    margin-bottom: 16px;
+  }
+  .booking-title .deco { color: #C8493B; opacity: 0.5; margin: 0 8px; }
+  .booking-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .booking-input-wrap {
+    flex: 1;
+    background: #fff;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    height: 40px;
+  }
+  .booking-input-wrap svg { width: 16px; height: 16px; fill: #ccc; flex-shrink: 0; margin-right: 6px; }
+  .booking-input-wrap input, .booking-input-wrap select {
+    border: none;
+    outline: none;
+    flex: 1;
+    font-size: 13px;
+    background: transparent;
+    color: #333;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .booking-input-wrap select option { color: #333; }
+  .booking-selects { display: flex; gap: 8px; margin-bottom: 8px; }
+  .booking-selects .booking-input-wrap { min-width: 0; }
+  .booking-selects .booking-input-wrap::after {
+    content: '▾';
+    color: #999;
+    font-size: 10px;
+    margin-left: 4px;
+  }
+  .booking-needs { margin-bottom: 10px; }
+  .booking-needs-label { font-size: 13px; color: #666; margin-right: 8px; }
+  .booking-needs-tags { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+  .need-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    color: #999;
+    background: #fff;
+  }
+  .need-tag.checked {
+    border-color: #C8493B;
+    color: #C8493B;
+    background: #fff5f3;
+  }
+  .need-tag .check-icon { width: 14px; height: 14px; }
+  .booking-privacy {
+    font-size: 12px;
+    color: #999;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .booking-privacy .radio {
+    width: 14px;
+    height: 14px;
+    border: 1.5px solid #ccc;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .booking-privacy a { color: #C8493B; }
+  .booking-submit {
+    width: 80%;
+    margin: 0 auto;
+    display: block;
+    height: 44px;
+    background: linear-gradient(90deg, #ff6b35, #C8493B);
+    border: none;
+    border-radius: 22px;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* ===== Tab 切换区 ===== */
+  .tab-bar {
+    display: flex;
+    background: #fff;
+    border-bottom: 1px solid #f0f0f0;
+    position: sticky;
+    top: 43px;
+    z-index: 99;
+  }
+  .tab-item {
+    flex: 1;
+    text-align: center;
+    padding: 12px 0;
+    font-size: 15px;
+    font-weight: 500;
+    color: #999;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .tab-item + .tab-item::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 14px;
+    background: #e0e0e0;
+  }
+  .tab-item.active {
+    color: #C8493B;
+    border-bottom-color: #C8493B;
+    font-weight: 700;
+  }
+
+  /* ===== Tab 内容区 ===== */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ===== 优惠推荐 ===== */
+  .promo-list { padding: 10px 12px; }
+  .promo-card {
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .promo-img {
+    width: 100%;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .promo-img-1 { background: linear-gradient(135deg, #e8541e, #ff8c42); }
+  .promo-img-2 { background: linear-gradient(135deg, #c97b4a, #e0a878); }
+  .promo-price {
+    font-size: 28px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+  .promo-price .unit { font-size: 14px; font-weight: 400; }
+  .promo-price .label { display: block; font-size: 12px; font-weight: 400; opacity: 0.9; margin-top: 2px; }
+  .promo-card-info { padding: 10px 14px; }
+  .promo-card-title { font-size: 14px; font-weight: 600; color: #333; margin-bottom: 4px; }
+  .promo-card-desc { font-size: 12px; color: #999; }
+
+  /* ===== 精选案例模块 ===== */
+  .case-section {
+    background: #fff;
+    margin: 10px 12px;
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .case-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .case-title-bar {
+    width: 3px;
+    height: 16px;
+    background: #C8493B;
+    border-radius: 2px;
+  }
+  .case-title-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+  .case-title-sub {
+    font-size: 12px;
+    color: #999;
+    margin-left: 6px;
+  }
+
+  /* 案例 Tab */
+  .case-tabs {
+    display: flex;
+    border-bottom: 1px solid #f0f0f0;
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+  .case-tab {
+    flex: 1;
+    padding: 8px 4px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #999;
+    text-align: center;
+    cursor: pointer;
+    border: none;
+    background: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: all 0.3s;
+    white-space: nowrap;
+    position: relative;
+  }
+  .case-tab + .case-tab::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 12px;
+    background: #e0e0e0;
+  }
+  .case-tab:hover { color: #C8493B; }
+  .case-tab.active {
+    color: #C8493B;
+    border-bottom-color: #C8493B;
+    font-weight: 700;
+  }
+
+  .case-content { display: none; }
+  .case-content.active { display: block; }
+
+  /* 轮播 */
+  .case-carousel {
+    position: relative;
+    width: 100%;
+    height: 200px;
+    overflow: hidden;
+    border-radius: 8px;
+    background: #f5f5f5;
+  }
+  .case-carousel-track {
+    display: flex;
+    height: 100%;
+    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  }
+  .case-carousel-slide {
+    min-width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .slide-label {
+    color: rgba(255,255,255,0.9);
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    z-index: 1;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  }
+  .slide-label .slide-num {
+    display: block;
+    font-size: 32px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .slide-label .slide-desc {
+    display: block;
+    font-size: 12px;
+    opacity: 0.8;
+    margin-top: 2px;
+  }
+  .case-carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.3);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    z-index: 2;
+    opacity: 0.6;
+  }
+  .case-carousel:hover .case-carousel-btn { opacity: 1; }
+  .case-carousel-btn.prev { left: 8px; }
+  .case-carousel-btn.next { right: 8px; }
+  .case-carousel-dots {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 2;
+  }
+  .case-carousel-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.5);
+    cursor: pointer;
+    border: none;
+    padding: 0;
+    transition: all 0.3s;
+  }
+  .case-carousel-dot.active {
+    background: #fff;
+    width: 20px;
+    border-radius: 3.5px;
+  }
+
+  /* ===== 顾客说 ===== */
+  .review-list { padding: 10px 12px; }
+  .review-item {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 10px;
+    display: flex;
+    gap: 10px;
+  }
+  .review-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffe0c0, #ffc090);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #c87030;
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .review-content { flex: 1; min-width: 0; }
+  .review-top {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .review-name { font-size: 13px; font-weight: 600; color: #333; }
+  .review-stars { color: #ffc400; font-size: 12px; }
+  .review-text { font-size: 12px; color: #666; line-height: 1.6; }
+
+  /* ===== 底部导航 ===== */
+  .tabbar {
+    display: flex;
+    background: #fff;
+    border-top: 1px solid #f0f0f0;
+    padding: 6px 0 10px;
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 420px;
+    z-index: 100;
+  }
+  .tabbar-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 10px;
+    color: #999;
+    cursor: pointer;
+    position: relative;
+  }
+  .tabbar-item svg { width: 22px; height: 22px; fill: #ccc; }
+  .tabbar-item.active { color: #C8493B; }
+  .tabbar-item.active svg { fill: #C8493B; }
+  .tabbar-item .badge {
+    position: absolute;
+    top: -2px;
+    right: 50%;
+    margin-right: -16px;
+    background: #e8541e;
+    color: #fff;
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 8px;
+    line-height: 1;
+  }
+  .tabbar-design {
+    background: #C8493B;
+    color: #fff;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: -8px;
+  }
+  .tabbar-design svg { fill: #fff; width: 18px; height: 18px; }
+
+  .bottom-spacer { height: 70px; }
+</style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<div class="nav-bar">
+  <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg></div>
+  <div class="nav-logo">
+    <span class="nav-logo-text">SOGAL 索菲亚</span>
+    <span class="nav-logo-sub">全屋定制</span>
+  </div>
+  <div style="display:flex;gap:16px;">
+    <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></div>
+    <div class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg></div>
+  </div>
+</div>
+
+<!-- Banner -->
+<div class="banner">
+  <div class="banner-placeholder">[ 门店实景照片 ]</div>
+  <div class="banner-3d-btn">3D全景</div>
+</div>
+
+<!-- 门店信息 -->
+<div class="store-info">
+  <div class="store-name">广州市索菲亚维家思店</div>
+  <div class="store-info-row">
+    <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z"/></svg>
+    <span>黄埔大道西188号维家思广场2楼298号</span>
+  </div>
+  <div class="store-info-row">
+    <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+    <span>020-38355475</span>
+  </div>
+  <div class="store-info-row">
+    <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+    <span>10:00-21:30</span>
+  </div>
+</div>
+
+<!-- 预约表单 -->
+<div class="booking-card">
+  <div class="booking-title"><span class="deco">>></span> 免费预约 · 量尺设计 <span class="deco"><<</span></div>
+  <div class="booking-row">
+    <div class="booking-input-wrap">
+      <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      <input type="text" placeholder="怎么称呼您" />
+    </div>
+    <div class="booking-input-wrap">
+      <svg viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+      <input type="text" placeholder="填手机号享免费设计" />
+    </div>
+  </div>
+  <div class="booking-selects">
+    <div class="booking-input-wrap"><select><option>广东省</option></select></div>
+    <div class="booking-input-wrap"><select><option>广州市</option></select></div>
+    <div class="booking-input-wrap"><select><option>天河区</option></select></div>
+  </div>
+  <div class="booking-needs">
+    <span class="booking-needs-label">需求：</span>
+    <span class="booking-needs-tags">
+      <span class="need-tag checked">柜类</span>
+      <span class="need-tag">橱柜</span>
+      <span class="need-tag">木门</span>
+      <span class="need-tag">家品</span>
+    </span>
+  </div>
+  <div class="booking-privacy">
+    <span class="radio"></span>
+    <span>我已详细阅读并同意 <a href="#">索菲亚用户隐私政策</a></span>
+  </div>
+  <button class="booking-submit">立即申请 ></button>
+</div>
+
+<!-- ★ 精选案例模块（位于优惠推荐和顾客说上方）★ -->
+<div class="case-section">
+  <div class="case-section-title">
+    <div class="case-title-bar"></div>
+    <span class="case-title-text">精选案例</span>
+    <span class="case-title-sub">真实业主定制实景</span>
+  </div>
+
+  <!-- 案例 Tab -->
+  <div class="case-tabs">
+    <button class="case-tab active" data-case="0">保利红馆</button>
+    <button class="case-tab" data-case="1">骏景花园</button>
+    <button class="case-tab" data-case="2">锦绣香江</button>
+  </div>
+
+  <!-- 案例一：3张图 -->
+  <div class="case-content active" data-case-content="0">
+    <div class="case-carousel" data-carousel>
+      <div class="case-carousel-track">
+        <div class="case-carousel-slide" style="background:linear-gradient(135deg,#6b5b95,#9b8bc4);">
+          <div class="slide-label"><span class="slide-num">1/3</span>客厅·现代简约<span class="slide-desc">整面墙定制电视柜+收纳系统</span></div>
+        </div>
+        <div class="case-carousel-slide" style="background:linear-gradient(135deg,#5b7b95,#8babc4);">
+          <div class="slide-label"><span class="slide-num">2/3</span>主卧·温馨雅致<span class="slide-desc">到顶衣柜+床头一体化设计</span></div>
+        </div>
+        <div class="case-carousel-slide" style="background:linear-gradient(135deg,#5b957b,#8bc4ab);">
+          <div class="slide-label"><span class="slide-num">3/3</span>书房·功能收纳<span class="slide-desc">L型书桌+满墙书柜定制</span></div>
+        </div>
+      </div>
+      <button class="case-carousel-btn prev">‹</button>
+      <button class="case-carousel-btn next">›</button>
+      <div class="case-carousel-dots">
+        <button class="case-carousel-dot active" data-dot="0"></button>
+        <button class="case-carousel-dot" data-dot="1"></button>
+        <button class="case-carousel-dot" data-dot="2"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 案例二：2张图 -->
+  <div class="case-content" data-case-content="1">
+    <div class="case-carousel" data-carousel>
+      <div class="case-carousel-track">
+        <div class="case-carousel-slide" style="background:linear-gradient(135deg,#c97b4a,#e0a878);">
+          <div class="slide-label"><span class="slide-num">1/2</span>入户玄关<span class="slide-desc">嵌入式玄关柜+换鞋凳一体设计</span></div>
+        </div>
+        <div class="case-carousel-slide" style="background:linear-gradient(135deg,#b86b5b,#d89888);">
+          <div class="slide-label"><span class="slide-num">2/2</span>衣帽间·轻奢<span class="slide-desc">U型布局+玻璃门+灯带系统</span></div>
+        </div>
+      </div>
+      <button class="case-carousel-btn prev">‹</button>
+      <button class="case-carousel-btn next">›</button>
+      <div class="case-carousel-dots">
+        <button class="case-carousel-dot active" data-dot="0"></button>
+        <button class="case-carousel-dot" data-dot="1"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 案例三：1张图 -->
+  <div class="case-content" data-case-content="2">
+    <div class="case-carousel" data-carousel>
+      <div class="case-carousel-track">
+        <div class="case-carousel-slide" style="background:linear-gradient(135deg,#4a7bc9,#78a4e0);">
+          <div class="slide-label"><span class="slide-num">1/1</span>儿童房<span class="slide-desc">上下床+书桌+衣柜一体化定制</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab 切换区 -->
+<div class="tab-bar">
+  <div class="tab-item active" data-tab="0">优惠推荐</div>
+  <div class="tab-item" data-tab="1">顾客说</div>
+</div>
+
+<!-- ====== Tab 内容区 ====== -->
+<div class="tab-content active" data-tab-content="0">
+  <!-- 优惠推荐 -->
+  <div class="promo-list">
+    <div class="promo-card">
+      <div class="promo-img promo-img-1">
+        <div class="promo-price">16999<span class="unit">元起</span><span class="label">全屋定制套餐</span></div>
+      </div>
+      <div class="promo-card-info">
+        <div class="promo-card-title">16999元全屋定制套餐</div>
+        <div class="promo-card-desc">含衣柜+橱柜+电视柜，限时限量的超值套餐</div>
+      </div>
+    </div>
+    <div class="promo-card">
+      <div class="promo-img promo-img-2">
+        <div class="promo-price">2980<span class="unit">元</span><span class="label">设计大礼包</span></div>
+      </div>
+      <div class="promo-card-info">
+        <div class="promo-card-title">免费领2980元设计礼包</div>
+        <div class="promo-card-desc">上门量尺+全屋设计+效果图，免费送</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 顾客说 Tab 内容 -->
+<div class="tab-content" data-tab-content="1">
+  <div class="review-list">
+    <div class="review-item">
+      <div class="review-avatar">李</div>
+      <div class="review-content">
+        <div class="review-top">
+          <span class="review-name">李女士</span>
+          <span class="review-stars">★★★★★</span>
+        </div>
+        <div class="review-text">定制了全屋衣柜和橱柜，设计师很专业，量尺精确，安装师傅态度好，整体效果很满意。</div>
+      </div>
+    </div>
+    <div class="review-item">
+      <div class="review-avatar">王</div>
+      <div class="review-content">
+        <div class="review-top">
+          <span class="review-name">王先生</span>
+          <span class="review-stars">★★★★★</span>
+        </div>
+        <div class="review-text">从预约量尺到最终安装只用了两周，效率很高。板材环保无异味，细节做工到位。</div>
+      </div>
+    </div>
+    <div class="review-item">
+      <div class="review-avatar">陈</div>
+      <div class="review-content">
+        <div class="review-top">
+          <span class="review-name">陈女士</span>
+          <span class="review-stars">★★★★☆</span>
+        </div>
+        <div class="review-text">整体满意，衣帽间设计很实用，灯光搭配也好看。就是安装当天等了稍久，不过最终效果对得起等待。</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bottom-spacer"></div>
+
+<!-- 底部导航 -->
+<div class="tabbar">
+  <div class="tabbar-item">
+    <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    <span>首页</span>
+  </div>
+  <div class="tabbar-item">
+    <svg viewBox="0 0 24 24"><path d="M3 3h8v8H3V3zm10 0h8v8h-8V3zM3 13h8v8H3v-8zm10 0h8v8h-8v-8z"/></svg>
+    <span>分类</span>
+  </div>
+  <div class="tabbar-item active">
+    <div class="tabbar-design">
+      <svg viewBox="0 0 24 24"><path d="M14.06 9.02l.92.92L5.92 19H5v-.92l9.06-9.06M17.66 3c-.25 0-.51.1-.7.29l-1.83 1.83 3.75 3.75 1.83-1.83a.996.996 0 0 0 0-1.41l-2.34-2.34c-.2-.2-.45-.29-.71-.29zm-3.6 3.19L3 17.25V21h3.75L17.81 9.94l-3.75-3.75z"/></svg>
+    </div>
+    <span>免费设计</span>
+  </div>
+  <div class="tabbar-item">
+    <svg viewBox="0 0 24 24"><path d="M20 6h-2.18c.11-.31.18-.65.18-1a2.996 2.996 0 0 0-5.5-1.65l-.5.67-.5-.68C10.96 2.54 10.05 2 9 2 7.34 2 6 3.34 6 5c0 .35.07.69.18 1H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2z"/></svg>
+    <span>7月特惠</span>
+    <span class="badge">NEW</span>
+  </div>
+  <div class="tabbar-item">
+    <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/></svg>
+    <span>实体门店</span>
+  </div>
+</div>
+
+<script>
+(function() {
+  // 顶部 Tab 切换
+  var tabItems = document.querySelectorAll('.tab-item');
+  var tabContents = document.querySelectorAll('.tab-content');
+  tabItems.forEach(function(item) {
+    item.addEventListener('click', function() {
+      tabItems.forEach(function(t) { t.classList.remove('active'); });
+      item.classList.add('active');
+      var idx = item.dataset.tab;
+      tabContents.forEach(function(c) { c.classList.remove('active'); });
+      var target = document.querySelector('[data-tab-content="' + idx + '"]');
+      if (target) target.classList.add('active');
+    });
+  });
+
+  // 案例 Tab 切换
+  var caseTabs = document.querySelectorAll('.case-tab');
+  var caseContents = document.querySelectorAll('.case-content');
+  var carousels = [];
+
+  document.querySelectorAll('[data-carousel]').forEach(function(carousel) {
+    var track = carousel.querySelector('.case-carousel-track');
+    var slides = carousel.querySelectorAll('.case-carousel-slide');
+    var dots = carousel.querySelectorAll('.case-carousel-dot');
+    var prevBtn = carousel.querySelector('.case-carousel-btn.prev');
+    var nextBtn = carousel.querySelector('.case-carousel-btn.next');
+    var current = 0;
+    var total = slides.length;
+    var timer = null;
+
+    var obj = {
+      goTo: function(i) {
+        if (total <= 1) return;
+        if (i < 0) i = total - 1;
+        if (i >= total) i = 0;
+        current = i;
+        track.style.transform = 'translateX(-' + (current * 100) + '%)';
+        dots.forEach(function(d, j) { d.classList.toggle('active', j === current); });
+      },
+      start: function() {
+        if (total <= 1) return;
+        this.stop();
+        var self = this;
+        timer = setInterval(function() { self.goTo(current + 1); }, 4000);
+      },
+      stop: function() { if (timer) { clearInterval(timer); timer = null; } }
+    };
+
+    if (prevBtn) prevBtn.addEventListener('click', function(e) { e.stopPropagation(); obj.goTo(current - 1); });
+    if (nextBtn) nextBtn.addEventListener('click', function(e) { e.stopPropagation(); obj.goTo(current + 1); });
+    dots.forEach(function(d, i) { d.addEventListener('click', function(e) { e.stopPropagation(); obj.goTo(i); }); });
+    carousel.addEventListener('mouseenter', function() { obj.stop(); });
+    carousel.addEventListener('mouseleave', function() { obj.start(); });
+    carousels.push(obj);
+  });
+
+  caseTabs.forEach(function(tab, idx) {
+    tab.addEventListener('click', function() {
+      carousels.forEach(function(c) { c.stop(); });
+      caseTabs.forEach(function(t) { t.classList.remove('active'); });
+      tab.classList.add('active');
+      caseContents.forEach(function(c) { c.classList.remove('active'); });
+      var target = document.querySelector('[data-case-content="' + idx + '"]');
+      if (target) {
+        target.classList.add('active');
+        if (carousels[idx]) { carousels[idx].goTo(0); carousels[idx].start(); }
+      }
+    });
+  });
+
+  if (carousels[0]) carousels[0].start();
+})();
+</script>
+
+</body>
+</html>
