@@ -344,6 +344,7 @@
     overflow: hidden;
   }
   .case-tab {
+    flex: 1;
     padding: 12px 24px;
     font-size: 15px;
     font-weight: 500;
@@ -377,6 +378,12 @@
   /* 案例内容区 */
   .case-content { display: none; }
   .case-content.active { display: block; }
+  .case-name {
+    font-size: 16px;
+    font-weight: 400;
+    color: #333;
+    margin-bottom: 12px;
+  }
 
   /* 大图轮播 */
   .case-carousel {
@@ -538,9 +545,9 @@
 <div class="breadcrumb">
   <div class="container">
     <a href="#">首页</a>
-    <span class="sep">></span>
+    <span class="sep">&gt;</span>
     <a href="#">附近门店</a>
-    <span class="sep">></span>
+    <span class="sep">&gt;</span>
     <span class="current">广州市索菲亚乐峰店</span>
   </div>
 </div>
@@ -646,7 +653,7 @@
             <select class="form-input"><option>广州市</option></select>
             <select class="form-input"><option>海珠区</option></select>
           </div>
-          <button class="submit-btn">一键免费领取 ></button>
+          <button class="submit-btn">一键免费领取 &gt;</button>
           <div class="privacy-check">
             <input type="checkbox" /> 我已详细阅读并同意 <a href="#">索菲亚用户隐私政策</a>
           </div>
@@ -665,13 +672,14 @@
 
         <!-- Tab 导航 -->
         <div class="case-tabs">
-          <button class="case-tab active" data-case="0">海珠区·保利红馆</button>
-          <button class="case-tab" data-case="1">天河区·骏景花园</button>
-          <button class="case-tab" data-case="2">番禺区·锦绣香江</button>
+          <button class="case-tab active" data-case="0">案例一</button>
+          <button class="case-tab" data-case="1">案例二</button>
+          <button class="case-tab" data-case="2">案例三</button>
         </div>
 
         <!-- 案例一：3张图轮播 -->
         <div class="case-content active" data-case-content="0">
+          <div class="case-name">保利红馆 · 现代简约风全屋定制</div>
           <div class="case-carousel" data-case-carousel>
             <div class="case-carousel-track">
               <div class="case-carousel-slide" style="background: linear-gradient(135deg, #6b5b95, #9b8bc4);">
@@ -708,6 +716,7 @@
 
         <!-- 案例二：2张图轮播 -->
         <div class="case-content" data-case-content="1">
+          <div class="case-name">骏景花园 · 北欧风格全屋定制</div>
           <div class="case-carousel" data-case-carousel>
             <div class="case-carousel-track">
               <div class="case-carousel-slide" style="background: linear-gradient(135deg, #c97b4a, #e0a878);">
@@ -736,6 +745,7 @@
 
         <!-- 案例三：1张图（单图无轮播控件） -->
         <div class="case-content" data-case-content="2">
+          <div class="case-name">锦绣香江 · 新中式全屋定制</div>
           <div class="case-carousel" data-case-carousel>
             <div class="case-carousel-track">
               <div class="case-carousel-slide" style="background: linear-gradient(135deg, #4a7bc9, #78a4e0);">
@@ -797,14 +807,14 @@
     <!-- ===== 右侧列：人气商品 ===== -->
     <div class="sidebar">
       <div class="sidebar-card">
-        <div class="sidebar-title">人气商品 <span class="more">更多 ></span></div>
+        <div class="sidebar-title">人气商品 <span class="more">更多 &gt;</span></div>
         <div class="product-item">
           <div class="product-img">商品图</div>
           <div class="product-info">
             <div class="product-name">19800元一站式索菲亚定制全屋</div>
             <div class="product-price">
               <span class="price">¥19800</span>
-              <span class="buy-btn">立即抢购 ></span>
+              <span class="buy-btn">立即抢购 &gt;</span>
             </div>
           </div>
         </div>
@@ -814,7 +824,7 @@
             <div class="product-name">索菲亚艾菲尔系列轻奢衣帽间</div>
             <div class="product-price">
               <span class="price">¥0.1</span>
-              <span class="buy-btn">立即抢购 ></span>
+              <span class="buy-btn">立即抢购 &gt;</span>
             </div>
           </div>
         </div>
@@ -824,7 +834,7 @@
             <div class="product-name">索菲亚青少年垂直上下床</div>
             <div class="product-price">
               <span class="price">¥0.1</span>
-              <span class="buy-btn">立即抢购 ></span>
+              <span class="buy-btn">立即抢购 &gt;</span>
             </div>
           </div>
         </div>
