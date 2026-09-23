@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片尺寸转换工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f0f2f5;
+            color: #1f2937;
+            min-height: 100vh;
+            padding: 24px 16px;
+        }
+
+        .app {
+            max-width: 860px;
+            margin: 0 auto;
+        }
+
+        .app-header {
+            text-align: center;
+            margin-bottom: 28px;
+        }
+
+        .app-header h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 6px;
+        }
+
+        .app-header p {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        /* Upload Zone */
+        .upload-zone {
+            background: #fff;
+            border: 2px dashed #cbd5e1;
+            border-radius: 16px;
+            padding: 56px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: #4f46e5;
+            background: #f5f3ff;
+        }
+
+        .upload-zone svg {
+            margin-bottom: 14px;
+        }
+
+        .upload-text {
+            font-size: 16px;
+            color: #374151;
+            margin-bottom: 6px;
+        }
+
+        .upload-link {
+            color: #4f46e5;
+            font-weight: 600;
+        }
+
+        .upload-hint {
+            font-size: 13px;
+            color: #9ca3af;
+        }
+
+        /* Work Area */
+        .work-area {
+            display: none;
+        }
+
+        .work-area.active {
+            display: block;
+        }
+
+        /* Error */
+        .error-msg {
+            background: #fef2f2;
+            color: #dc2626;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .error-msg.show {
+            display: block;
+        }
+
+        /* Preview Grid */
+        .preview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 640px) {
+            .preview-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .preview-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+        }
+
+        .preview-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 10px;
+        }
+
+        .preview-image {
+            width: 100%;
+            height: 220px;
+            background-color: #f8f8f8;
+            background-image:
+                linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
+                linear-gradient(-45deg, #e0e0e0 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #e0e0e0 75%),
+                linear-gradient(-45deg, transparent 75%, #e0e0e0 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 10px;
+            position: relative;
+        }
+
+        .preview-image img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .preview-info {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .preview-info span {
+            font-size: 13px;
+            color: #6b7280;
+        }
+
+        .info-value {
+            font-weight: 600;
+            color: #111827;
+        }
+
+        /* Processing overlay */
+        .processing-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(255, 255, 255, 0.88);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            z-index: 1;
+        }
+
+        .spinner {
+            width: 34px;
+            height: 34px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #4f46e5;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Controls */
+        .controls {
+            background: #fff;
+            border-radius: 12px;
+            padding: 18px 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
+            margin-bottom: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .control-group > label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        select {
+            padding: 8px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #1f2937;
+            background: #fff;
+            cursor: pointer;
+            min-width: 150px;
+        }
+
+        input[type="range"] {
+            width: 200px;
+            accent-color: #4f46e5;
+            cursor: pointer;
+        }
+
+        .bg-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #374151;
+            font-weight: 400;
+        }
+
+        input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #4f46e5;
+            cursor: pointer;
+        }
+
+        input[type="color"] {
+            width: 36px;
+            height: 36px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            cursor: pointer;
+            padding: 2px;
+            background: #fff;
+        }
+
+        input[type="color"]:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+
+        /* Actions */
+        .actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            padding: 11px 32px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, opacity 0.15s;
+        }
+
+        .btn-primary {
+            background: #4f46e5;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #4338ca;
+        }
+
+        .btn-secondary {
+            background: #fff;
+            color: #4f46e5;
+            border: 1px solid #4f46e5;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #f5f3ff;
+        }
+
+        .btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .new-upload {
+            text-align: center;
+        }
+
+        .new-upload a {
+            color: #6b7280;
+            font-size: 14px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .new-upload a:hover {
+            color: #4f46e5;
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <header class="app-header">
+            <h1>图片尺寸转换工具</h1>
+            <p>上传图片 · 选择比例 · 自动压缩 · 下载使用</p>
+        </header>
+
+        <div class="upload-zone" id="uploadZone">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            <p class="upload-text">拖拽图片到此处，或 <span class="upload-link">点击上传</span></p>
+            <p class="upload-hint">支持 PNG / JPG / WebP，建议 50MB 以内</p>
+            <input type="file" id="fileInput" accept="image/*" hidden>
+        </div>
+
+        <div class="work-area" id="workArea">
+            <div class="error-msg" id="errorMsg"></div>
+
+            <div class="preview-grid">
+                <div class="preview-card">
+                    <div class="preview-label">原图</div>
+                    <div class="preview-image" id="originalPreview"></div>
+                    <div class="preview-info">
+                        <span>文件名：<span class="info-value" id="originalName">--</span></span>
+                        <span>大小：<span class="info-value" id="originalSize">--</span></span>
+                        <span>尺寸：<span class="info-value" id="originalDimensions">--</span></span>
+                    </div>
+                </div>
+                <div class="preview-card">
+                    <div class="preview-label">转换结果</div>
+                    <div class="preview-image" id="resultPreview">
+                        <div class="processing-overlay" id="processing">
+                            <div class="spinner"></div>
+                            <p style="color:#6b7280;font-size:14px;">处理中...</p>
+                        </div>
+                    </div>
+                    <div class="preview-info">
+                        <span>大小：<span class="info-value" id="resultSize">--</span></span>
+                        <span>尺寸：<span class="info-value" id="resultDimensions">--</span></span>
+                        <span>压缩率：<span class="info-value" id="compressionRatio">--</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label>目标比例</label>
+                    <select id="ratioSelect">
+                        <option value="1:1" selected>1:1 正方形</option>
+                        <option value="4:3">4:3 横版</option>
+                        <option value="3:4">3:4 竖版</option>
+                        <option value="16:9">16:9 宽屏</option>
+                        <option value="9:16">9:16 竖屏</option>
+                        <option value="3:2">3:2</option>
+                        <option value="2:3">2:3</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>压缩目标：<span id="targetLabel">1.0 MB</span></label>
+                    <input type="range" id="targetSize" min="0.2" max="5" step="0.1" value="1">
+                </div>
+
+                <div class="control-group">
+                    <label>背景</label>
+                    <div class="bg-controls">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="transparentBg"> 透明
+                        </label>
+                        <input type="color" id="bgColor" value="#ffffff">
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary" id="processBtn">重新处理</button>
+                <button class="btn btn-secondary" id="downloadBtn" disabled>下载图片</button>
+            </div>
+
+            <div class="new-upload">
+                <a id="newUpload">上传新图片</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let originalImage = null;
+        let originalFile = null;
+        let resultBlob = null;
+        let resultUrl = null;
+
+        const testCanvas = document.createElement('canvas');
+        const webpSupported = testCanvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+
+        const $ = id => document.getElementById(id);
+        const uploadZone = $('uploadZone');
+        const fileInput = $('fileInput');
+        const workArea = $('workArea');
+        const originalPreview = $('originalPreview');
+        const resultPreview = $('resultPreview');
+        const processing = $('processing');
+        const ratioSelect = $('ratioSelect');
+        const targetSize = $('targetSize');
+        const targetLabel = $('targetLabel');
+        const transparentBg = $('transparentBg');
+        const bgColor = $('bgColor');
+        const processBtn = $('processBtn');
+        const downloadBtn = $('downloadBtn');
+        const errorMsg = $('errorMsg');
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(2) + ' MB';
+        }
+
+        function showError(msg) {
+            errorMsg.textContent = msg;
+            errorMsg.classList.add('show');
+        }
+
+        function hideError() {
+            errorMsg.classList.remove('show');
+        }
+
+        function canvasToBlob(canvas, type, quality) {
+            return new Promise(resolve => canvas.toBlob(resolve, type, quality));
+        }
+
+        // ---- Upload ----
+        uploadZone.addEventListener('click', () => fileInput.click());
+        uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+        uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+        uploadZone.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', e => {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('请上传图片文件（PNG / JPG / WebP）');
+                return;
+            }
+            if (file.size > 50 * 1048576) {
+                showError('图片过大，请上传 50MB 以内的图片');
+                return;
+            }
+
+            hideError();
+            originalFile = file;
+
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    originalImage = img;
+                    originalPreview.innerHTML = '';
+                    originalPreview.appendChild(img.cloneNode());
+
+                    $('originalName').textContent = file.name;
+                    $('originalSize').textContent = formatSize(file.size);
+                    $('originalDimensions').textContent = img.width + ' × ' + img.height;
+
+                    uploadZone.style.display = 'none';
+                    workArea.classList.add('active');
+                    processImage();
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ---- Controls ----
+        targetSize.addEventListener('input', () => {
+            targetLabel.textContent = parseFloat(targetSize.value).toFixed(1) + ' MB';
+        });
+
+        ratioSelect.addEventListener('change', processImage);
+        targetSize.addEventListener('change', processImage);
+        transparentBg.addEventListener('change', () => {
+            bgColor.disabled = transparentBg.checked;
+            processImage();
+        });
+        bgColor.addEventListener('change', processImage);
+        processBtn.addEventListener('click', processImage);
+
+        downloadBtn.addEventListener('click', () => {
+            if (!resultBlob) return;
+            const ext = resultBlob.type.includes('png') ? 'png' :
+                        resultBlob.type.includes('webp') ? 'webp' : 'jpg';
+            const r = ratioSelect.value.replace(':', 'x');
+            const base = originalFile.name.replace(/\.[^.]+$/, '');
+            const url = URL.createObjectURL(resultBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = base + '_' + r + '.' + ext;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        $('newUpload').addEventListener('click', () => {
+            uploadZone.style.display = 'block';
+            workArea.classList.remove('active');
+            fileInput.value = '';
+            originalImage = null;
+            originalFile = null;
+            resultBlob = null;
+            if (resultUrl) { URL.revokeObjectURL(resultUrl); resultUrl = null; }
+        });
+
+        // ---- Core Processing ----
+        async function processImage() {
+            if (!originalImage) return;
+
+            hideError();
+            processing.style.display = 'flex';
+            downloadBtn.disabled = true;
+
+            await new Promise(r => setTimeout(r, 50));
+
+            try {
+                const ratio = ratioSelect.value;
+                const [rw, rh] = ratio.split(':').map(Number);
+                const targetBytes = parseFloat(targetSize.value) * 1048576;
+                const isTransparent = transparentBg.checked;
+                const bg = bgColor.value;
+                const img = originalImage;
+                const MAX_DIM = 2500;
+
+                // Calculate canvas size: exact target ratio, must contain full image
+                let canvasW = Math.max(img.width, img.height * rw / rh);
+                let canvasH = canvasW * rh / rw;
+                canvasW = Math.round(canvasW);
+                canvasH = Math.round(canvasH);
+
+                // Scale image and canvas if exceeding max dimension
+                let scaleW = img.width;
+                let scaleH = img.height;
+                if (canvasW > MAX_DIM || canvasH > MAX_DIM) {
+                    const s = MAX_DIM / Math.max(canvasW, canvasH);
+                    canvasW = Math.round(canvasW * s);
+                    canvasH = Math.round(canvasH * s);
+                    scaleW = Math.round(scaleW * s);
+                    scaleH = Math.round(scaleH * s);
+                }
+
+                // Draw
+                const canvas = document.createElement('canvas');
+                canvas.width = canvasW;
+                canvas.height = canvasH;
+                const ctx = canvas.getContext('2d');
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+
+                if (!isTransparent) {
+                    ctx.fillStyle = bg;
+                    ctx.fillRect(0, 0, canvasW, canvasH);
+                }
+
+                const x = (canvasW - scaleW) / 2;
+                const y = (canvasH - scaleH) / 2;
+                ctx.drawImage(img, x, y, scaleW, scaleH);
+
+                // Compress
+                const format = isTransparent
+                    ? (webpSupported ? 'image/webp' : 'image/png')
+                    : 'image/jpeg';
+
+                if (format === 'image/png') {
+                    resultBlob = await compressPNG(canvas, targetBytes);
+                } else {
+                    resultBlob = await compressWithQuality(canvas, format, targetBytes);
+                }
+
+                // Display
+                if (resultUrl) URL.revokeObjectURL(resultUrl);
+                resultUrl = URL.createObjectURL(resultBlob);
+
+                const resultImg = document.createElement('img');
+                resultImg.src = resultUrl;
+                resultImg.alt = '转换结果';
+                resultPreview.innerHTML = '';
+                resultPreview.appendChild(resultImg);
+                // Re-append processing overlay (it was inside resultPreview)
+                resultPreview.appendChild(processing);
+
+                $('resultSize').textContent = formatSize(resultBlob.size);
+                $('resultDimensions').textContent = canvasW + ' × ' + canvasH;
+                const pct = ((1 - resultBlob.size / originalFile.size) * 100).toFixed(0);
+                $('compressionRatio').textContent =
+                    resultBlob.size < originalFile.size
+                        ? '-' + pct + '%'
+                        : '+' + Math.abs(pct) + '%';
+
+                downloadBtn.disabled = false;
+            } catch (err) {
+                showError('处理失败：' + err.message);
+            } finally {
+                processing.style.display = 'none';
+            }
+        }
+
+        // JPEG / WebP: binary search quality to hit target
+        async function compressWithQuality(canvas, type, targetBytes) {
+            let lo = 0.3, hi = 1.0;
+            let best = null;
+
+            for (let i = 0; i < 12; i++) {
+                const mid = (lo + hi) / 2;
+                const blob = await canvasToBlob(canvas, type, mid);
+                if (blob.size <= targetBytes) {
+                    best = blob;
+                    lo = mid;
+                } else {
+                    hi = mid;
+                }
+            }
+
+            if (!best) {
+                best = await canvasToBlob(canvas, type, 0.3);
+                if (best.size > targetBytes) {
+                    best = await reduceResolution(canvas, type, 0.7, targetBytes);
+                }
+            }
+            return best;
+        }
+
+        // PNG: reduce resolution to hit target
+        async function compressPNG(canvas, targetBytes) {
+            let blob = await canvasToBlob(canvas, 'image/png');
+            if (blob.size <= targetBytes) return blob;
+            return await reduceResolution(canvas, 'image/png', 1.0, targetBytes);
+        }
+
+        // Reduce canvas resolution step by step until under target
+        async function reduceResolution(canvas, type, quality, targetBytes) {
+            let best = await canvasToBlob(canvas, type, quality);
+            let scale = 0.85;
+            while (best.size > targetBytes && scale > 0.15) {
+                const tc = document.createElement('canvas');
+                tc.width = Math.max(1, Math.round(canvas.width * scale));
+                tc.height = Math.max(1, Math.round(canvas.height * scale));
+                const tctx = tc.getContext('2d');
+                tctx.imageSmoothingEnabled = true;
+                tctx.imageSmoothingQuality = 'high';
+                tctx.drawImage(canvas, 0, 0, tc.width, tc.height);
+                best = await canvasToBlob(tc, type, quality);
+                scale -= 0.1;
+            }
+            return best;
+        }
+    </script>
+</body>
+</html>
