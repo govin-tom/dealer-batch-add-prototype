@@ -348,7 +348,7 @@
                 <line x1="12" y1="3" x2="12" y2="15"/>
             </svg>
             <p class="upload-text">拖拽图片到此处，或 <span class="upload-link">点击上传</span></p>
-            <p class="upload-hint">支持 PNG / JPG / WebP，建议 50MB 以内</p>
+            <p class="upload-hint">支持 PNG / JPG，建议 50MB 以内</p>
             <input type="file" id="fileInput" accept="image/*" hidden>
         </div>
 
@@ -481,7 +481,7 @@
 
         function handleFile(file) {
             if (!file.type.startsWith('image/')) {
-                showError('请上传图片文件（PNG / JPG / WebP）');
+                showError('请上传图片文件（PNG / JPG ）');
                 return;
             }
             if (file.size > 50 * 1048576) {
