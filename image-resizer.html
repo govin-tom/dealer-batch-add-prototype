@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>图片尺寸转换工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -15,371 +16,150 @@
             padding: 24px 16px;
         }
 
-        .app {
-            max-width: 860px;
-            margin: 0 auto;
-        }
+        .app { max-width: 960px; margin: 0 auto; }
 
-        .app-header {
-            text-align: center;
-            margin-bottom: 28px;
-        }
-
-        .app-header h1 {
-            font-size: 26px;
-            font-weight: 700;
-            color: #111827;
-            margin-bottom: 6px;
-        }
-
-        .app-header p {
-            font-size: 14px;
-            color: #6b7280;
-        }
+        .app-header { text-align: center; margin-bottom: 28px; }
+        .app-header h1 { font-size: 26px; font-weight: 700; color: #111827; margin-bottom: 6px; }
+        .app-header p { font-size: 14px; color: #6b7280; }
 
         /* Upload Zone */
         .upload-zone {
-            background: #fff;
-            border: 2px dashed #cbd5e1;
-            border-radius: 16px;
-            padding: 56px 24px;
-            text-align: center;
-            cursor: pointer;
+            background: #fff; border: 2px dashed #cbd5e1; border-radius: 16px;
+            padding: 56px 24px; text-align: center; cursor: pointer;
             transition: border-color 0.2s, background 0.2s;
         }
-
-        .upload-zone:hover,
-        .upload-zone.dragover {
-            border-color: #4f46e5;
-            background: #f5f3ff;
-        }
-
-        .upload-zone svg {
-            margin-bottom: 14px;
-        }
-
-        .upload-text {
-            font-size: 16px;
-            color: #374151;
-            margin-bottom: 6px;
-        }
-
-        .upload-link {
-            color: #4f46e5;
-            font-weight: 600;
-        }
-
-        .upload-hint {
-            font-size: 13px;
-            color: #9ca3af;
-        }
+        .upload-zone:hover, .upload-zone.dragover { border-color: #4f46e5; background: #f5f3ff; }
+        .upload-zone svg { margin-bottom: 14px; }
+        .upload-text { font-size: 16px; color: #374151; margin-bottom: 6px; }
+        .upload-link { color: #4f46e5; font-weight: 600; }
+        .upload-hint { font-size: 13px; color: #9ca3af; }
 
         /* Work Area */
-        .work-area {
-            display: none;
-        }
+        .work-area { display: none; }
+        .work-area.active { display: block; }
 
-        .work-area.active {
-            display: block;
-        }
-
-        /* Error */
         .error-msg {
-            background: #fef2f2;
-            color: #dc2626;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-size: 14px;
-            margin-bottom: 16px;
-            display: none;
+            background: #fef2f2; color: #dc2626; padding: 12px 16px;
+            border-radius: 8px; font-size: 14px; margin-bottom: 16px; display: none;
+        }
+        .error-msg.show { display: block; }
+
+        /* Controls */
+        .controls {
+            background: #fff; border-radius: 12px; padding: 18px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.07); margin-bottom: 16px;
+            display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end;
+        }
+        .control-group { display: flex; flex-direction: column; gap: 6px; }
+        .control-group > label { font-size: 13px; font-weight: 600; color: #374151; }
+
+        select {
+            padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 8px;
+            font-size: 14px; color: #1f2937; background: #fff; cursor: pointer; min-width: 150px;
+        }
+        input[type="range"] { width: 200px; accent-color: #4f46e5; cursor: pointer; }
+        .bg-controls { display: flex; align-items: center; gap: 10px; }
+        .checkbox-label { display: flex; align-items: center; gap: 5px; cursor: pointer; font-size: 14px; color: #374151; font-weight: 400; }
+        input[type="checkbox"] { width: 16px; height: 16px; accent-color: #4f46e5; cursor: pointer; }
+        input[type="color"] { width: 36px; height: 36px; border: 1px solid #d1d5db; border-radius: 8px; cursor: pointer; padding: 2px; background: #fff; }
+        input[type="color"]:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        /* Actions */
+        .actions { display: flex; gap: 12px; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+        .btn { padding: 11px 32px; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s, opacity 0.15s; }
+        .btn-primary { background: #4f46e5; color: #fff; }
+        .btn-primary:hover { background: #4338ca; }
+        .btn-secondary { background: #fff; color: #4f46e5; border: 1px solid #4f46e5; }
+        .btn-secondary:hover:not(:disabled) { background: #f5f3ff; }
+        .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        .new-upload { text-align: center; }
+        .new-upload a { color: #6b7280; font-size: 14px; text-decoration: none; cursor: pointer; }
+        .new-upload a:hover { color: #4f46e5; }
+
+        /* Batch List */
+        .batch-summary {
+            background: #fff; border-radius: 12px; padding: 14px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.07); margin-bottom: 16px;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+        }
+        .batch-summary .summary-text { font-size: 14px; color: #374151; }
+        .batch-summary .summary-text strong { color: #4f46e5; }
+
+        .batch-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+
+        .batch-item {
+            background: #fff; border-radius: 12px; padding: 14px 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+            display: grid; grid-template-columns: 80px 1fr 80px 1fr auto; gap: 14px; align-items: center;
+        }
+        @media (max-width: 700px) {
+            .batch-item { grid-template-columns: 60px 1fr 60px 1fr; }
+            .batch-item .item-download { grid-column: 1 / -1; }
         }
 
-        .error-msg.show {
-            display: block;
-        }
-
-        /* Preview Grid */
-        .preview-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        @media (max-width: 640px) {
-            .preview-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .preview-card {
-            background: #fff;
-            border-radius: 12px;
-            padding: 16px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
-        }
-
-        .preview-label {
-            font-size: 12px;
-            font-weight: 600;
-            color: #6b7280;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            margin-bottom: 10px;
-        }
-
-        .preview-image {
-            width: 100%;
-            height: 220px;
+        .item-thumb {
+            width: 80px; height: 80px; border-radius: 8px; overflow: hidden;
             background-color: #f8f8f8;
             background-image:
                 linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
                 linear-gradient(-45deg, #e0e0e0 25%, transparent 25%),
                 linear-gradient(45deg, transparent 75%, #e0e0e0 75%),
                 linear-gradient(-45deg, transparent 75%, #e0e0e0 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            margin-bottom: 10px;
-            position: relative;
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+            display: flex; align-items: center; justify-content: center;
         }
+        @media (max-width: 700px) { .item-thumb { width: 60px; height: 60px; } }
+        .item-thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
 
-        .preview-image img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
+        .item-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+        .item-name { font-size: 13px; font-weight: 600; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .item-meta { font-size: 12px; color: #9ca3af; }
 
-        .preview-info {
-            display: flex;
-            flex-direction: column;
-            gap: 3px;
-        }
+        .item-arrow { font-size: 20px; color: #cbd5e1; text-align: center; }
+        .item-result-meta { font-size: 12px; color: #6b7280; }
+        .item-result-meta strong { color: #111827; }
+        .item-status { font-size: 12px; font-weight: 600; }
+        .status-done { color: #16a34a; }
+        .status-processing { color: #4f46e5; }
+        .status-error { color: #dc2626; }
 
-        .preview-info span {
-            font-size: 13px;
-            color: #6b7280;
+        .item-download {
+            background: #fff; border: 1px solid #d1d5db; border-radius: 8px;
+            width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: border-color 0.15s; flex-shrink: 0;
         }
+        .item-download:hover { border-color: #4f46e5; }
+        .item-download:disabled { opacity: 0.3; cursor: not-allowed; }
 
-        .info-value {
-            font-weight: 600;
-            color: #111827;
+        .processing-bar {
+            background: #4f46e5; height: 3px; border-radius: 2px;
+            animation: pulse 1.2s ease-in-out infinite;
         }
-
-        /* Processing overlay */
-        .processing-overlay {
-            position: absolute;
-            inset: 0;
-            background: rgba(255, 255, 255, 0.88);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            z-index: 1;
-        }
-
-        .spinner {
-            width: 34px;
-            height: 34px;
-            border: 3px solid #e5e7eb;
-            border-top-color: #4f46e5;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Controls */
-        .controls {
-            background: #fff;
-            border-radius: 12px;
-            padding: 18px 20px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.07);
-            margin-bottom: 16px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            align-items: flex-end;
-        }
-
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .control-group > label {
-            font-size: 13px;
-            font-weight: 600;
-            color: #374151;
-        }
-
-        select {
-            padding: 8px 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 14px;
-            color: #1f2937;
-            background: #fff;
-            cursor: pointer;
-            min-width: 150px;
-        }
-
-        input[type="range"] {
-            width: 200px;
-            accent-color: #4f46e5;
-            cursor: pointer;
-        }
-
-        .bg-controls {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            color: #374151;
-            font-weight: 400;
-        }
-
-        input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            accent-color: #4f46e5;
-            cursor: pointer;
-        }
-
-        input[type="color"] {
-            width: 36px;
-            height: 36px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            cursor: pointer;
-            padding: 2px;
-            background: #fff;
-        }
-
-        input[type="color"]:disabled {
-            opacity: 0.35;
-            cursor: not-allowed;
-        }
-
-        /* Actions */
-        .actions {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            margin-bottom: 16px;
-        }
-
-        .btn {
-            padding: 11px 32px;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.15s, opacity 0.15s;
-        }
-
-        .btn-primary {
-            background: #4f46e5;
-            color: #fff;
-        }
-
-        .btn-primary:hover {
-            background: #4338ca;
-        }
-
-        .btn-secondary {
-            background: #fff;
-            color: #4f46e5;
-            border: 1px solid #4f46e5;
-        }
-
-        .btn-secondary:hover:not(:disabled) {
-            background: #f5f3ff;
-        }
-
-        .btn:disabled {
-            opacity: 0.45;
-            cursor: not-allowed;
-        }
-
-        .new-upload {
-            text-align: center;
-        }
-
-        .new-upload a {
-            color: #6b7280;
-            font-size: 14px;
-            text-decoration: none;
-            cursor: pointer;
-        }
-
-        .new-upload a:hover {
-            color: #4f46e5;
-        }
+        @keyframes pulse { 0%,100% { opacity: 0.3; } 50% { opacity: 1; } }
     </style>
 </head>
 <body>
     <div class="app">
         <header class="app-header">
             <h1>图片尺寸转换工具</h1>
-            <p>上传图片 · 选择比例 · 自动压缩 · 下载使用</p>
+            <p>批量上传 · 选择比例 · 自动压缩 · 批量下载</p>
         </header>
 
         <div class="upload-zone" id="uploadZone">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                <polyline points="17 8 12 3 7 8"/>
-                <line x1="12" y1="3" x2="12" y2="15"/>
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
             </svg>
-            <p class="upload-text">拖拽图片到此处，或 <span class="upload-link">点击上传</span></p>
+            <p class="upload-text">拖拽图片到此处，或 <span class="upload-link">点击上传</span>（支持多选）</p>
             <p class="upload-hint">支持 PNG / JPG，建议 50MB 以内</p>
-            <input type="file" id="fileInput" accept="image/*" hidden>
+            <input type="file" id="fileInput" accept="image/png,image/jpeg" multiple hidden>
         </div>
 
         <div class="work-area" id="workArea">
             <div class="error-msg" id="errorMsg"></div>
-
-            <div class="preview-grid">
-                <div class="preview-card">
-                    <div class="preview-label">原图</div>
-                    <div class="preview-image" id="originalPreview"></div>
-                    <div class="preview-info">
-                        <span>文件名：<span class="info-value" id="originalName">--</span></span>
-                        <span>大小：<span class="info-value" id="originalSize">--</span></span>
-                        <span>尺寸：<span class="info-value" id="originalDimensions">--</span></span>
-                    </div>
-                </div>
-                <div class="preview-card">
-                    <div class="preview-label">转换结果</div>
-                    <div class="preview-image" id="resultPreview">
-                        <div class="processing-overlay" id="processing">
-                            <div class="spinner"></div>
-                            <p style="color:#6b7280;font-size:14px;">处理中...</p>
-                        </div>
-                    </div>
-                    <div class="preview-info">
-                        <span>大小：<span class="info-value" id="resultSize">--</span></span>
-                        <span>尺寸：<span class="info-value" id="resultDimensions">--</span></span>
-                        <span>压缩率：<span class="info-value" id="compressionRatio">--</span></span>
-                    </div>
-                </div>
-            </div>
 
             <div class="controls">
                 <div class="control-group">
@@ -394,12 +174,10 @@
                         <option value="2:3">2:3</option>
                     </select>
                 </div>
-
                 <div class="control-group">
                     <label>压缩目标：<span id="targetLabel">1.0 MB</span></label>
                     <input type="range" id="targetSize" min="0.2" max="5" step="0.1" value="1">
                 </div>
-
                 <div class="control-group">
                     <label>背景</label>
                     <div class="bg-controls">
@@ -411,9 +189,15 @@
                 </div>
             </div>
 
+            <div class="batch-summary" id="batchSummary">
+                <span class="summary-text">共 <strong id="totalCount">0</strong> 张图片，已处理 <strong id="doneCount">0</strong> 张</span>
+            </div>
+
+            <div class="batch-list" id="batchList"></div>
+
             <div class="actions">
                 <button class="btn btn-primary" id="processBtn">重新处理</button>
-                <button class="btn btn-secondary" id="downloadBtn" disabled>下载图片</button>
+                <button class="btn btn-secondary" id="downloadAllBtn" disabled>打包下载全部</button>
             </div>
 
             <div class="new-upload">
@@ -423,28 +207,21 @@
     </div>
 
     <script>
-        let originalImage = null;
-        let originalFile = null;
-        let resultBlob = null;
-        let resultUrl = null;
-
-        const testCanvas = document.createElement('canvas');
-        const webpSupported = testCanvas.toDataURL('image/webp').indexOf('data:image/webp') === 0;
+        let batchItems = [];
+        let batchSeq = 0;
 
         const $ = id => document.getElementById(id);
         const uploadZone = $('uploadZone');
         const fileInput = $('fileInput');
         const workArea = $('workArea');
-        const originalPreview = $('originalPreview');
-        const resultPreview = $('resultPreview');
-        const processing = $('processing');
+        const batchList = $('batchList');
         const ratioSelect = $('ratioSelect');
         const targetSize = $('targetSize');
         const targetLabel = $('targetLabel');
         const transparentBg = $('transparentBg');
         const bgColor = $('bgColor');
         const processBtn = $('processBtn');
-        const downloadBtn = $('downloadBtn');
+        const downloadAllBtn = $('downloadAllBtn');
         const errorMsg = $('errorMsg');
 
         function formatSize(bytes) {
@@ -453,14 +230,8 @@
             return (bytes / 1048576).toFixed(2) + ' MB';
         }
 
-        function showError(msg) {
-            errorMsg.textContent = msg;
-            errorMsg.classList.add('show');
-        }
-
-        function hideError() {
-            errorMsg.classList.remove('show');
-        }
+        function showError(msg) { errorMsg.textContent = msg; errorMsg.classList.add('show'); }
+        function hideError() { errorMsg.classList.remove('show'); }
 
         function canvasToBlob(canvas, type, quality) {
             return new Promise(resolve => canvas.toBlob(resolve, type, quality));
@@ -473,93 +244,237 @@
         uploadZone.addEventListener('drop', e => {
             e.preventDefault();
             uploadZone.classList.remove('dragover');
-            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+            const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/'));
+            if (files.length) handleFiles(files);
         });
         fileInput.addEventListener('change', e => {
-            if (e.target.files.length) handleFile(e.target.files[0]);
+            const files = Array.from(e.target.files);
+            if (files.length) handleFiles(files);
         });
 
-        function handleFile(file) {
-            if (!file.type.startsWith('image/')) {
-                showError('请上传图片文件（PNG / JPG ）');
-                return;
+        function handleFiles(files) {
+            const valid = files.filter(f => /^image\/(png|jpeg|jpg)$/.test(f.type));
+            const invalid = files.filter(f => !/^image\/(png|jpeg|jpg)$/.test(f.type));
+            if (invalid.length) {
+                showError(`${invalid.length} 张非 PNG/JPG 格式图片已忽略`);
+            } else {
+                hideError();
             }
-            if (file.size > 50 * 1048576) {
-                showError('图片过大，请上传 50MB 以内的图片');
-                return;
+            if (!valid.length) return;
+
+            const oversized = valid.filter(f => f.size > 50 * 1048576);
+            if (oversized.length) {
+                showError(`${oversized.length} 张图片超过 50MB，已忽略`);
             }
 
-            hideError();
-            originalFile = file;
+            const ok = valid.filter(f => f.size <= 50 * 1048576);
+            if (!ok.length) return;
 
-            const reader = new FileReader();
-            reader.onload = e => {
-                const img = new Image();
-                img.onload = () => {
-                    originalImage = img;
-                    originalPreview.innerHTML = '';
-                    originalPreview.appendChild(img.cloneNode());
+            ok.forEach(file => {
+                const id = ++batchSeq;
+                const item = { id, file, img: null, blob: null, url: null, status: 'pending', error: null };
+                batchItems.push(item);
 
-                    $('originalName').textContent = file.name;
-                    $('originalSize').textContent = formatSize(file.size);
-                    $('originalDimensions').textContent = img.width + ' × ' + img.height;
-
-                    uploadZone.style.display = 'none';
-                    workArea.classList.add('active');
-                    processImage();
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = new Image();
+                    img.onload = () => {
+                        item.img = img;
+                        item.status = 'loaded';
+                        renderItem(item);
+                        processItem(item);
+                    };
+                    img.src = e.target.result;
                 };
-                img.src = e.target.result;
-            };
-            reader.readAsDataURL(file);
+                reader.readAsDataURL(file);
+            });
+
+            uploadZone.style.display = 'none';
+            workArea.classList.add('active');
+            renderList();
+        }
+
+        // ---- Rendering ----
+        function renderList() {
+            batchList.innerHTML = '';
+            batchItems.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'batch-item';
+                el.id = 'item-' + item.id;
+                el.innerHTML = renderItemHTML(item);
+                batchList.appendChild(el);
+            });
+            updateSummary();
+        }
+
+        function renderItem(item) {
+            const el = $('item-' + item.id);
+            if (el) el.innerHTML = renderItemHTML(item);
+            updateSummary();
+        }
+
+        function renderItemHTML(item) {
+            const thumb = item.url
+                ? `<img src="${item.url}">`
+                : (item.img ? `<img src="${item.img.src}">` : '');
+
+            const origMeta = item.img
+                ? `${item.img.width}×${item.img.height} · ${formatSize(item.file.size)}`
+                : formatSize(item.file.size);
+
+            let resultMeta = '--';
+            let statusHTML = '';
+
+            if (item.status === 'processing') {
+                statusHTML = '<span class="item-status status-processing">处理中</span>';
+                resultMeta = '<div class="processing-bar"></div>';
+            } else if (item.status === 'done' && item.blob) {
+                const pct = ((1 - item.blob.size / item.file.size) * 100).toFixed(0);
+                const pctStr = item.blob.size < item.file.size ? '-' + pct + '%' : '+' + Math.abs(pct) + '%';
+                resultMeta = `<span class="item-result-meta">${formatSize(item.blob.size)} · ${pctStr}</span>`;
+                statusHTML = '<span class="item-status status-done">已完成</span>';
+            } else if (item.status === 'error') {
+                statusHTML = '<span class="item-status status-error">失败</span>';
+                resultMeta = '<span class="item-result-meta" style="color:#dc2626">' + (item.error || '处理失败') + '</span>';
+            } else {
+                statusHTML = '<span class="item-status" style="color:#9ca3af">等待中</span>';
+            }
+
+            const name = item.file.name;
+            const canDownload = item.status === 'done' && item.blob;
+
+            return `
+                <div class="item-thumb">${thumb}</div>
+                <div class="item-info">
+                    <span class="item-name" title="${name}">${name}</span>
+                    <span class="item-meta">${origMeta}</span>
+                </div>
+                <div class="item-arrow">→</div>
+                <div class="item-info">
+                    ${statusHTML}
+                    ${resultMeta}
+                </div>
+                <button class="item-download" ${canDownload ? '' : 'disabled'} onclick="downloadItem(${item.id})" title="下载">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${canDownload ? '#4f46e5' : '#cbd5e1'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </button>
+            `;
+        }
+
+        function updateSummary() {
+            $('totalCount').textContent = batchItems.length;
+            $('doneCount').textContent = batchItems.filter(i => i.status === 'done').length;
+            const allDone = batchItems.length > 0 && batchItems.every(i => i.status === 'done');
+            downloadAllBtn.disabled = !allDone;
         }
 
         // ---- Controls ----
         targetSize.addEventListener('input', () => {
             targetLabel.textContent = parseFloat(targetSize.value).toFixed(1) + ' MB';
         });
-
-        ratioSelect.addEventListener('change', processImage);
-        targetSize.addEventListener('change', processImage);
+        ratioSelect.addEventListener('change', () => processAll());
+        targetSize.addEventListener('change', () => processAll());
         transparentBg.addEventListener('change', () => {
             bgColor.disabled = transparentBg.checked;
-            processImage();
+            processAll();
         });
-        bgColor.addEventListener('change', processImage);
-        processBtn.addEventListener('click', processImage);
+        bgColor.addEventListener('change', () => processAll());
+        processBtn.addEventListener('click', () => processAll());
 
-        downloadBtn.addEventListener('click', () => {
-            if (!resultBlob) return;
-            const ext = resultBlob.type.includes('png') ? 'png' :
-                        resultBlob.type.includes('webp') ? 'webp' : 'jpg';
+        // ---- Download ----
+        window.downloadItem = function(id) {
+            const item = batchItems.find(i => i.id === id);
+            if (!item || !item.blob) return;
+            const ext = item.blob.type.includes('png') ? 'png' : 'jpg';
             const r = ratioSelect.value.replace(':', 'x');
-            const base = originalFile.name.replace(/\.[^.]+$/, '');
-            const url = URL.createObjectURL(resultBlob);
+            const base = item.file.name.replace(/\.[^.]+$/, '');
+            const url = URL.createObjectURL(item.blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = base + '_' + r + '.' + ext;
             a.click();
             URL.revokeObjectURL(url);
+        };
+
+        downloadAllBtn.addEventListener('click', async () => {
+            const done = batchItems.filter(i => i.status === 'done' && i.blob);
+            if (!done.length) return;
+
+            downloadAllBtn.disabled = true;
+            downloadAllBtn.textContent = '打包中...';
+
+            try {
+                const zip = new JSZip();
+                const r = ratioSelect.value.replace(':', 'x');
+                const usedNames = new Set();
+
+                for (const item of done) {
+                    const ext = item.blob.type.includes('png') ? 'png' : 'jpg';
+                    let base = item.file.name.replace(/\.[^.]+$/, '');
+                    let name = base + '_' + r + '.' + ext;
+                    let n = 1;
+                    while (usedNames.has(name)) {
+                        name = base + '_' + r + '_' + n + '.' + ext;
+                        n++;
+                    }
+                    usedNames.add(name);
+                    zip.file(name, item.blob);
+                }
+
+                const blob = await zip.generateAsync({ type: 'blob' }, (meta) => {
+                    downloadAllBtn.textContent = `打包中... ${Math.round(meta.percent)}%`;
+                });
+
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'images_' + r + '.zip';
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                showError('打包失败：' + err.message);
+            } finally {
+                downloadAllBtn.disabled = false;
+                downloadAllBtn.textContent = '打包下载全部';
+            }
         });
 
         $('newUpload').addEventListener('click', () => {
+            batchItems.forEach(item => { if (item.url) URL.revokeObjectURL(item.url); });
+            batchItems = [];
             uploadZone.style.display = 'block';
             workArea.classList.remove('active');
             fileInput.value = '';
-            originalImage = null;
-            originalFile = null;
-            resultBlob = null;
-            if (resultUrl) { URL.revokeObjectURL(resultUrl); resultUrl = null; }
+            hideError();
         });
 
-        // ---- Core Processing ----
-        async function processImage() {
-            if (!originalImage) return;
+        // ---- Processing ----
+        async function processAll() {
+            for (const item of batchItems) {
+                if (item.img) {
+                    item.status = 'processing';
+                    item.error = null;
+                    renderItem(item);
+                }
+            }
+            for (const item of batchItems) {
+                if (item.img && item.status === 'processing') {
+                    await processItem(item);
+                }
+            }
+        }
 
-            hideError();
-            processing.style.display = 'flex';
-            downloadBtn.disabled = true;
+        async function processItem(item) {
+            if (!item.img) return;
 
-            await new Promise(r => setTimeout(r, 50));
+            item.status = 'processing';
+            item.error = null;
+            renderItem(item);
+
+            await new Promise(r => setTimeout(r, 30));
 
             try {
                 const ratio = ratioSelect.value;
@@ -567,16 +482,14 @@
                 const targetBytes = parseFloat(targetSize.value) * 1048576;
                 const isTransparent = transparentBg.checked;
                 const bg = bgColor.value;
-                const img = originalImage;
+                const img = item.img;
                 const MAX_DIM = 2500;
 
-                // Calculate canvas size: exact target ratio, must contain full image
                 let canvasW = Math.max(img.width, img.height * rw / rh);
                 let canvasH = canvasW * rh / rw;
                 canvasW = Math.round(canvasW);
                 canvasH = Math.round(canvasH);
 
-                // Scale image and canvas if exceeding max dimension
                 let scaleW = img.width;
                 let scaleH = img.height;
                 if (canvasW > MAX_DIM || canvasH > MAX_DIM) {
@@ -587,7 +500,6 @@
                     scaleH = Math.round(scaleH * s);
                 }
 
-                // Draw
                 const canvas = document.createElement('canvas');
                 canvas.width = canvasW;
                 canvas.height = canvasH;
@@ -604,61 +516,33 @@
                 const y = (canvasH - scaleH) / 2;
                 ctx.drawImage(img, x, y, scaleW, scaleH);
 
-                // Compress
-                const format = isTransparent
-                    ? 'image/png'
-                    : 'image/jpeg';
+                const format = isTransparent ? 'image/png' : 'image/jpeg';
 
                 if (format === 'image/png') {
-                    resultBlob = await compressPNG(canvas, targetBytes);
+                    item.blob = await compressPNG(canvas, targetBytes);
                 } else {
-                    resultBlob = await compressWithQuality(canvas, format, targetBytes);
+                    item.blob = await compressWithQuality(canvas, format, targetBytes);
                 }
 
-                // Display
-                if (resultUrl) URL.revokeObjectURL(resultUrl);
-                resultUrl = URL.createObjectURL(resultBlob);
-
-                const resultImg = document.createElement('img');
-                resultImg.src = resultUrl;
-                resultImg.alt = '转换结果';
-                resultPreview.innerHTML = '';
-                resultPreview.appendChild(resultImg);
-                // Re-append processing overlay (it was inside resultPreview)
-                resultPreview.appendChild(processing);
-
-                $('resultSize').textContent = formatSize(resultBlob.size);
-                $('resultDimensions').textContent = canvasW + ' × ' + canvasH;
-                const pct = ((1 - resultBlob.size / originalFile.size) * 100).toFixed(0);
-                $('compressionRatio').textContent =
-                    resultBlob.size < originalFile.size
-                        ? '-' + pct + '%'
-                        : '+' + Math.abs(pct) + '%';
-
-                downloadBtn.disabled = false;
+                if (item.url) URL.revokeObjectURL(item.url);
+                item.url = URL.createObjectURL(item.blob);
+                item.status = 'done';
             } catch (err) {
-                showError('处理失败：' + err.message);
-            } finally {
-                processing.style.display = 'none';
+                item.status = 'error';
+                item.error = err.message;
             }
+            renderItem(item);
         }
 
-        // JPEG / WebP: binary search quality to hit target
         async function compressWithQuality(canvas, type, targetBytes) {
             let lo = 0.3, hi = 1.0;
             let best = null;
-
             for (let i = 0; i < 12; i++) {
                 const mid = (lo + hi) / 2;
                 const blob = await canvasToBlob(canvas, type, mid);
-                if (blob.size <= targetBytes) {
-                    best = blob;
-                    lo = mid;
-                } else {
-                    hi = mid;
-                }
+                if (blob.size <= targetBytes) { best = blob; lo = mid; }
+                else { hi = mid; }
             }
-
             if (!best) {
                 best = await canvasToBlob(canvas, type, 0.3);
                 if (best.size > targetBytes) {
@@ -668,14 +552,12 @@
             return best;
         }
 
-        // PNG: reduce resolution to hit target
         async function compressPNG(canvas, targetBytes) {
             let blob = await canvasToBlob(canvas, 'image/png');
             if (blob.size <= targetBytes) return blob;
             return await reduceResolution(canvas, 'image/png', 1.0, targetBytes);
         }
 
-        // Reduce canvas resolution step by step until under target
         async function reduceResolution(canvas, type, quality, targetBytes) {
             let best = await canvasToBlob(canvas, type, quality);
             let scale = 0.85;
