@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>基本数据 - 投资者关系</title>
+<style>
+  :root {
+    --gold: #c9a063;
+    --text-strong: #333333;
+    --text-body: #3d3d3d;
+    --text-label: #6b6b6b;
+    --text-muted: #7a7a7a;
+    --text-faint: #9a9a9a;
+    --line: #e6e6e6;
+    --cell-line: #e9e9e9;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #fff;
+    color: var(--text-body);
+    font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  a { text-decoration: none; color: inherit; }
+
+  /* ---------- 顶部面包屑 ---------- */
+  .site-header {
+    height: 52px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .bc-mark {
+    display: inline-flex;
+    gap: 2px;
+    margin-right: 8px;
+    transform: skewX(-20deg);
+  }
+
+  .bc-mark i {
+    display: block;
+    width: 3px;
+    height: 17px;
+    background: var(--gold);
+  }
+
+  .bc-mark i:nth-child(2) { opacity: .62; }
+  .bc-mark i:nth-child(3) { opacity: .34; }
+
+  .bc-label {
+    color: var(--text-strong);
+    font-weight: 500;
+  }
+
+  .bc-link { color: var(--text-muted); transition: color .2s; }
+  .bc-link:hover { color: var(--gold); }
+
+  .bc-sep {
+    margin: 0 6px;
+    color: #b5b5b5;
+    font-size: 11px;
+  }
+
+  .bc-current { color: var(--text-muted); }
+
+  /* ---------- 页面容器 ---------- */
+  .page { padding: 34px 45px 60px; }
+
+  /* ---------- 区块标题行（方案1：右侧幽灵按钮） ---------- */
+  .sec-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .sec-title {
+    color: var(--text-strong);
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .ghost-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 5px 14px;
+    border: 1px solid var(--gold);
+    border-radius: 3px;
+    color: var(--gold);
+    font-size: 13px;
+    transition: background .2s, color .2s;
+  }
+
+  .ghost-btn:hover {
+    background: var(--gold);
+    color: #fff;
+  }
+
+  /* ---------- 公司基本信息表格 ---------- */
+  .info-table {
+    display: grid;
+    grid-template-columns: 140px 1fr 140px 1fr;
+    border-top: 1px solid var(--cell-line);
+    border-left: 1px solid var(--cell-line);
+  }
+
+  .cell {
+    min-width: 0;
+    padding: 15px 18px;
+    border-right: 1px solid var(--cell-line);
+    border-bottom: 1px solid var(--cell-line);
+    font-size: 14px;
+    line-height: 1.5;
+    overflow-wrap: break-word;
+  }
+
+  .cell.k { color: var(--text-label); }
+  .cell.v { color: var(--text-body); }
+
+  .cell.span3 { grid-column: span 3; }
+
+  /* 方案3：表格末行入口 */
+  .entry-row {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    padding: 15px 18px;
+    border-right: 1px solid var(--cell-line);
+    border-bottom: 1px solid var(--cell-line);
+    font-size: 14px;
+    transition: background .2s;
+  }
+
+  .entry-row:hover { background: #faf7f2; }
+
+  .entry-k {
+    flex: none;
+    width: 122px;
+    color: var(--text-label);
+  }
+
+  .entry-v {
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  .entry-arrow {
+    margin-left: auto;
+    color: var(--gold);
+    transition: transform .2s;
+  }
+
+  .entry-row:hover .entry-arrow { transform: translateX(3px); }
+
+  /* ---------- 跳转提示 ---------- */
+  .toast {
+    position: fixed;
+    top: 72px;
+    left: 50%;
+    z-index: 10;
+    padding: 9px 18px;
+    border-radius: 2px;
+    background: rgba(51, 51, 51, .88);
+    color: #fff;
+    font-size: 13px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transform: translate(-50%, -8px);
+    transition: opacity .22s, transform .22s, visibility .22s;
+  }
+
+  .toast.is-show {
+    opacity: 1;
+    visibility: visible;
+    transform: translate(-50%, 0);
+  }
+
+  @media (max-width: 767px) {
+    .site-header { padding: 0 16px; }
+    .page { padding: 20px 16px 40px; }
+    .info-table { grid-template-columns: 96px 1fr; }
+    .cell { padding: 11px 12px; font-size: 13px; }
+    .cell.span3 { grid-column: span 1; }
+    .cell.pc-only { display: none; }
+    .entry-k { width: 82px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="breadcrumb">
+    <span class="bc-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="bc-label">当前位置：</span>
+    <a class="bc-link" href="#">首页</a>
+    <span class="bc-sep">&gt;</span>
+    <a class="bc-link" href="#">投资者关系</a>
+    <span class="bc-sep">&gt;</span>
+    <span class="bc-current">基本数据</span>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- 方案1：区块标题行右侧幽灵按钮，点击跳转财务数据 H5 页面 -->
+  <div class="sec-head">
+    <span class="sec-title">【公司基本信息】</span>
+    <a class="ghost-btn is-jump" href="#" data-label="财务数据">财务数据 &rsaquo;</a>
+  </div>
+
+  <div class="info-table">
+    <div class="cell k">公司名称</div>
+    <div class="cell v">索菲亚家居股份有限公司</div>
+    <div class="cell k">证券代码</div>
+    <div class="cell v">002572</div>
+
+    <div class="cell k">成立日期</div>
+    <div class="cell v">2003年7月15日</div>
+    <div class="cell k">上市日期</div>
+    <div class="cell v">2011年4月12日</div>
+
+    <div class="cell k">董事长</div>
+    <div class="cell v">江淦钧</div>
+    <div class="cell k">总经理</div>
+    <div class="cell v">王兵</div>
+
+    <div class="cell k">财务总监</div>
+    <div class="cell v">马远宁</div>
+    <div class="cell k">董事会秘书</div>
+    <div class="cell v">陈蓉</div>
+
+    <div class="cell k">董事会成员</div>
+    <div class="cell v span3">江淦钧，柯建生，李力，王亚晶、吉争雄，徐勇，郭飚</div>
+
+    <div class="cell k">官方网站</div>
+    <div class="cell v">www.sfygroup.com</div>
+    <div class="cell k">邮箱</div>
+    <div class="cell v">ningji@suofeiya.com.cn</div>
+
+    <div class="cell k">电话</div>
+    <div class="cell v">020-87533019</div>
+    <div class="cell k">传真</div>
+    <div class="cell v">020-87579391</div>
+
+    <div class="cell k">注册地址</div>
+    <div class="cell v span3">广东省广州市增城区永宁街郭村仙宁路2号</div>
+
+    <div class="cell k">所属行业</div>
+    <div class="cell v">制造业</div>
+    <div class="cell k pc-only"></div>
+    <div class="cell v pc-only"></div>
+
+    <div class="cell k">细分行业</div>
+    <div class="cell v">家具制造业</div>
+    <div class="cell k pc-only"></div>
+    <div class="cell v pc-only"></div>
+
+    <div class="cell k">所属市场</div>
+    <div class="cell v">深交所主板（主板）</div>
+    <div class="cell k pc-only"></div>
+    <div class="cell v pc-only"></div>
+
+    <!-- 方案3：表格末行入口，点击跳转财务数据 H5 页面 -->
+    <a class="entry-row is-jump" href="#" data-label="财务数据">
+      <span class="entry-k">财务数据</span>
+      <span class="entry-v">查看主要财务指标</span>
+      <span class="entry-arrow" aria-hidden="true">&rsaquo;</span>
+    </a>
+  </div>
+
+</main>
+
+<div class="toast" role="status" aria-live="polite"></div>
+
+<script>
+  (function () {
+    var toast = document.querySelector('.toast');
+    var timer = null;
+
+    function showToast(text) {
+      if (!toast) return;
+      toast.textContent = text;
+      toast.classList.add('is-show');
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(function () {
+        toast.classList.remove('is-show');
+      }, 2200);
+    }
+
+    // 财务数据入口（标题右侧按钮 / 表格末行）：跳转至独立 H5 页面（原型中以提示条模拟跳转效果）
+    // 接入真实页面时，把下面 toast 换成 location.href = '目标 H5 页面地址' 即可
+    var jumpEls = document.querySelectorAll('.is-jump');
+    for (var i = 0; i < jumpEls.length; i++) {
+      jumpEls[i].addEventListener('click', function (event) {
+        event.preventDefault();
+        showToast('即将跳转至「' + this.getAttribute('data-label') + '」H5 页面（原型演示）');
+      });
+    }
+  })();
+</script>
+
+</body>
+</html>
