@@ -294,6 +294,16 @@
 
   .pager-go:hover { background: #e8e8e8; }
 
+  /* ---------- 未选中时的空状态 ---------- */
+  .empty-hint {
+    padding: 70px 0 80px;
+    color: var(--text-date);
+    font-size: 14px;
+    text-align: center;
+  }
+
+  .is-hidden { display: none; }
+
   /* ---------- 跳转提示 ---------- */
   .toast {
     position: fixed;
@@ -347,14 +357,16 @@
 
 <main class="page">
 
-  <!-- 标签栏：ESG报告为当前页（下划线）；临时报告 / 定期报告 点击跳转至独立 H5 页面 -->
+  <!-- 标签栏：默认不选中任何分类；点击 ESG报告 才出现选中态并展示列表；临时报告 / 定期报告 点击跳转至独立 H5 页面 -->
   <nav class="tabs" aria-label="报告分类">
-    <a class="tab is-active" href="#" aria-current="page">ESG报告</a>
+    <a class="tab" href="#" data-tab="esg">ESG报告</a>
     <a class="tab is-jump" href="#" data-label="临时报告">临时报告<span class="tab-arrow" aria-hidden="true">↗</span></a>
     <a class="tab is-jump" href="#" data-label="定期报告">定期报告<span class="tab-arrow" aria-hidden="true">↗</span></a>
   </nav>
 
-  <ul class="report-list">
+  <div class="empty-hint" data-empty-hint>请选择上方报告分类查看列表</div>
+
+  <ul class="report-list is-hidden">
     <li class="report-row">
       <a class="report-link" href="#">
         <span class="report-dot"></span>
@@ -437,7 +449,7 @@
     </li>
   </ul>
 
-  <div class="pager">
+  <div class="pager is-hidden">
     <span class="pager-info">共2页 14篇 当前第1页</span>
     <button class="pager-btn" type="button" aria-label="上一页">&lsaquo;</button>
     <button class="pager-btn is-current" type="button" aria-current="page">1</button>
@@ -467,6 +479,24 @@
       timer = setTimeout(function () {
         toast.classList.remove('is-show');
       }, 2200);
+    }
+
+    // ESG报告：默认不选中，点击后出现选中态并展示列表内容
+    var esgTab = document.querySelector('.tab[data-tab="esg"]');
+    var emptyHint = document.querySelector('[data-empty-hint]');
+    var reportList = document.querySelector('.report-list');
+    var pager = document.querySelector('.pager');
+
+    if (esgTab) {
+      esgTab.addEventListener('click', function (event) {
+        event.preventDefault();
+        if (esgTab.classList.contains('is-active')) return;
+        esgTab.classList.add('is-active');
+        esgTab.setAttribute('aria-current', 'page');
+        if (emptyHint) emptyHint.classList.add('is-hidden');
+        if (reportList) reportList.classList.remove('is-hidden');
+        if (pager) pager.classList.remove('is-hidden');
+      });
     }
 
     // 临时报告 / 定期报告：跳转至独立 H5 页面（原型中以提示条模拟跳转效果）
