@@ -294,43 +294,7 @@
 
   .pager-go:hover { background: #e8e8e8; }
 
-  /* ---------- 方案对比切换（演示控件） ---------- */
-  .scheme-switcher {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding-top: 16px;
-  }
-
-  .scheme-label {
-    margin-right: 6px;
-    color: var(--text-date);
-    font-size: 12px;
-  }
-
-  .scheme-btn {
-    height: 26px;
-    padding: 0 12px;
-    border: 1px solid var(--line);
-    border-radius: 13px;
-    background: #fff;
-    color: var(--text-muted);
-    font-size: 12px;
-    line-height: 1;
-    transition: border-color .2s, color .2s, background .2s;
-  }
-
-  .scheme-btn:hover { border-color: var(--gold); color: var(--gold); }
-
-  .scheme-btn.is-on {
-    background: var(--gold);
-    border-color: var(--gold);
-    color: #fff;
-  }
-
-  /* ---------- 方案B：入口卡片 ---------- */
+  /* ---------- 入口卡片 ---------- */
   .entry-cards {
     display: flex;
     gap: 16px;
@@ -369,17 +333,7 @@
 
   .entry-icon svg { width: 17px; height: 17px; fill: currentColor; }
 
-  .entry-text { display: grid; gap: 3px; min-width: 0; }
-
   .entry-title { font-size: 15px; color: var(--text-strong); }
-
-  .entry-desc {
-    overflow: hidden;
-    color: var(--text-date);
-    font-size: 12px;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
 
   .entry-arrow {
     flex: none;
@@ -389,7 +343,7 @@
     transition: transform .2s;
   }
 
-  .entry-card:hover .entry-arrow { transform: translate(2px, -2px); }
+  .entry-card:hover .entry-arrow { transform: translateX(2px); }
 
   /* ---------- 未选中时的空状态 ---------- */
   .empty-hint {
@@ -449,54 +403,32 @@
     <span class="bc-sep">&gt;</span>
     <a class="bc-link" href="#">投资者关系</a>
     <span class="bc-sep">&gt;</span>
-    <span class="bc-current">ESG报告</span>
+    <span class="bc-current">信息披露</span>
   </div>
 </header>
 
 <main class="page">
 
-  <!-- 方案对比切换（演示控件，非正式页面元素） -->
-  <div class="scheme-switcher" aria-label="方案对比切换">
-    <span class="scheme-label">方案对比</span>
-    <button class="scheme-btn is-on" type="button" data-scheme="a">方案A · 三类标签</button>
-    <button class="scheme-btn" type="button" data-scheme="b">方案B · 入口卡片</button>
+  <!-- 临时报告 / 定期报告：入口卡片，点击跳转至独立 H5 页面 -->
+  <div class="entry-cards">
+    <a class="entry-card is-jump" href="#" data-label="临时报告">
+      <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></span>
+      <span class="entry-title">临时报告</span>
+      <span class="entry-arrow" aria-hidden="true">&gt;</span>
+    </a>
+    <a class="entry-card is-jump" href="#" data-label="定期报告">
+      <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-2 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></span>
+      <span class="entry-title">定期报告</span>
+      <span class="entry-arrow" aria-hidden="true">&gt;</span>
+    </a>
   </div>
 
-  <!-- 方案A：标签栏保留三类，ESG报告挪到最后；点击 ESG报告 才出现选中态并展示列表 -->
-  <div class="scheme" data-scheme-panel="a">
-    <nav class="tabs" aria-label="报告分类">
-      <a class="tab is-jump" href="#" data-label="临时报告">临时报告<span class="tab-arrow" aria-hidden="true">↗</span></a>
-      <a class="tab is-jump" href="#" data-label="定期报告">定期报告<span class="tab-arrow" aria-hidden="true">↗</span></a>
-      <a class="tab" href="#" data-tab="esg">ESG报告</a>
-    </nav>
-  </div>
+  <!-- 标签栏：只保留 ESG报告；点击后才出现选中态并展示列表 -->
+  <nav class="tabs" aria-label="报告分类">
+    <a class="tab" href="#" data-tab="esg">ESG报告</a>
+  </nav>
 
-  <!-- 方案B：临时报告 / 定期报告 改为标签栏上方的入口卡片；标签栏只保留 ESG报告 -->
-  <div class="scheme is-hidden" data-scheme-panel="b">
-    <div class="entry-cards">
-      <a class="entry-card is-jump" href="#" data-label="临时报告">
-        <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></span>
-        <span class="entry-text">
-          <span class="entry-title">临时报告</span>
-          <span class="entry-desc">临时公告与报告，跳转至独立 H5 页面</span>
-        </span>
-        <span class="entry-arrow" aria-hidden="true">↗</span>
-      </a>
-      <a class="entry-card is-jump" href="#" data-label="定期报告">
-        <span class="entry-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1s-2.4.84-2.82 2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zm-7 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm-2 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg></span>
-        <span class="entry-text">
-          <span class="entry-title">定期报告</span>
-          <span class="entry-desc">年报 / 半年报 / 季报，跳转至独立 H5 页面</span>
-        </span>
-        <span class="entry-arrow" aria-hidden="true">↗</span>
-      </a>
-    </div>
-    <nav class="tabs" aria-label="报告分类">
-      <a class="tab" href="#" data-tab="esg">ESG报告</a>
-    </nav>
-  </div>
-
-  <div class="empty-hint" data-empty-hint>请选择上方报告分类查看列表</div>
+  <div class="empty-hint" data-empty-hint>请点击上方报告查看内容</div>
 
   <ul class="report-list is-hidden">
     <li class="report-row">
@@ -617,32 +549,6 @@
     var reportList = document.querySelector('.report-list');
     var pager = document.querySelector('.pager');
     var esgTabs = document.querySelectorAll('[data-tab="esg"]');
-
-    // 方案A / 方案B 切换：切换时重置为未选中状态
-    function resetSelection() {
-      for (var r = 0; r < esgTabs.length; r++) {
-        esgTabs[r].classList.remove('is-active');
-        esgTabs[r].removeAttribute('aria-current');
-      }
-      if (emptyHint) emptyHint.classList.remove('is-hidden');
-      if (reportList) reportList.classList.add('is-hidden');
-      if (pager) pager.classList.add('is-hidden');
-    }
-
-    var schemeBtns = document.querySelectorAll('.scheme-btn');
-    var panels = document.querySelectorAll('[data-scheme-panel]');
-    for (var s = 0; s < schemeBtns.length; s++) {
-      schemeBtns[s].addEventListener('click', function () {
-        var target = this.getAttribute('data-scheme');
-        for (var b = 0; b < schemeBtns.length; b++) {
-          schemeBtns[b].classList.toggle('is-on', schemeBtns[b] === this);
-        }
-        for (var p = 0; p < panels.length; p++) {
-          panels[p].classList.toggle('is-hidden', panels[p].getAttribute('data-scheme-panel') !== target);
-        }
-        resetSelection();
-      });
-    }
 
     // ESG报告：默认不选中，点击后出现选中态并展示列表内容
     for (var t = 0; t < esgTabs.length; t++) {
