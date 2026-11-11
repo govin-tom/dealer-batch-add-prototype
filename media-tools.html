@@ -218,16 +218,21 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         .q-mid  { background: #fef9c3; color: #ca8a04; }
         .q-low  { background: #ffedd5; color: #ea580c; }
         .q-bad  { background: #fee2e2; color: #dc2626; }
+        .card { margin-bottom: 14px; }
         .progress-card { display: none; }
         .progress-card.active { display: block; }
         .progress-track { height: 10px; background: #e5e7eb; border-radius: 6px; overflow: hidden; margin-bottom: 8px; }
         .progress-fill { height: 100%; width: 0%; background: #4f46e5; border-radius: 6px; transition: width 0.3s; }
         .progress-text { font-size: 13px; color: #6b7280; text-align: center; }
-        .result-card { display: none; text-align: center; }
+        .result-card { display: none; text-align: center; padding: 16px 14px; background: #f8fafc; border: 1px solid #e5e7eb; border-radius: 12px; }
         .result-card.active { display: block; }
         .result-title { font-size: 15px; font-weight: 600; color: #111827; margin-bottom: 6px; }
         .result-detail { font-size: 13px; color: #6b7280; margin-bottom: 14px; }
         .result-detail strong { color: #16a34a; }
+        .result-card .btn { min-width: 168px; }
+        /* 结果已出：下载为主操作，重新处理降级为次要操作 */
+        .actions .btn-restart { background: #fff; color: #6b7280; border: 1px solid #d1d5db; font-weight: 500; }
+        .actions .btn-restart:hover:not(:disabled) { background: #f9fafb; color: #374151; }
         .tips { font-size: 12px; color: #9ca3af; text-align: center; margin-top: 6px; line-height: 1.7; }
         /* ===== GIF 裁剪交互样式 ===== */
         .gif-crop-stage { position: relative; margin: 0 auto; background: #000; border-radius: 8px; overflow: hidden; user-select: none; touch-action: none; }
@@ -668,6 +673,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         };
 
         downloadAllBtn.addEventListener('click', async () => {
+            // 手机端不支持打包下载（微信/移动浏览器均无法保存 zip），直接提示
+            if (MT.isMobile) {
+                alert('可在电脑浏览器打开网页来下载压缩包');
+                return;
+            }
+
             const done = batchItems.filter(i => i.status === 'done' && i.blob);
             if (!done.length) return;
 
@@ -903,6 +914,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             let processing = false;
             let cancelled = false;
 
+            // 结果已出时，「开始压缩」降级为次要按钮并改文案，避免与主操作「下载视频」抢视觉
+            function setRestartMode(on) {
+                if (on) {
+                    startBtn.classList.remove('btn-primary');
+                    startBtn.classList.add('btn-restart');
+                    startBtn.textContent = '重新压缩';
+                } else {
+                    startBtn.classList.remove('btn-restart');
+                    startBtn.classList.add('btn-primary');
+                    startBtn.textContent = '开始压缩';
+                }
+            }
+
             function formatSize(bytes) {
                 if (bytes < 1024) return bytes + ' B';
                 if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
@@ -937,6 +961,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             function loadVideo(file) {
                 hideError();
                 resultCard.classList.remove('active');
+                setRestartMode(false);
                 resultBlob = null;
                 currentFile = file;
 
@@ -1038,6 +1063,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 if (!currentFile || processing) return;
                 hideError();
                 resultCard.classList.remove('active');
+                setRestartMode(false);
                 processing = true;
                 cancelled = false;
                 startBtn.disabled = true;
@@ -1059,6 +1085,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                         (pct >= 0 ? `减小 <strong>${pct.toFixed(0)}%</strong>` : `比原文件大 ${Math.abs(pct).toFixed(0)}%，建议直接使用原文件`) + `）` +
                         ` · 格式 ${blob.type.includes('mp4') ? 'MP4' : 'WebM'}`;
                     resultCard.classList.add('active');
+                    setRestartMode(true);
                 } catch (err) {
                     if (err.message === 'cancelled') {
                         showError('已取消压缩');
@@ -1178,7 +1205,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         })();
     </script>
 
-    <!-- 通用保存：移动端优先系统分享，微信环境用 window.open + 长按保存引导 -->
+    <!-- 通用保存：桌面直接下载；移动端/微信内用页面内浮层展示，长按保存 -->
     <script>
         (function () {
             const isMobile = /Android|iPhone|iPad|iPod|HarmonyOS|Mobile/i.test(navigator.userAgent);
@@ -1192,55 +1219,78 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 setTimeout(function () { URL.revokeObjectURL(url); }, 15000);
             }
 
-            // 微信环境专用：打开原生预览页，用户长按保存
-            function wechatSave(blob, filename) {
+            // 页面内浮层：微信会拦截 window.open 与 a[download]，
+            // 但页面里直接渲染 <img> 后长按仍可唤起「保存图片」，这是唯一稳定路径。
+            let overlayEl = null;
+            function showSaveOverlay(blob, filename) {
                 const url = URL.createObjectURL(blob);
                 const isImage = /^image\//.test(blob.type);
-                const isVideo = /^video\//.test(blob.type);
 
-                if (!isImage && !isVideo) {
-                    // zip 等二进制在微信里完全无法处理
-                    alert('微信内无法直接保存压缩包，\n请复制页面链接后，在系统浏览器中打开。');
-                    setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
-                    return;
+                if (overlayEl) { overlayEl.remove(); overlayEl = null; }
+
+                const el = document.createElement('div');
+                el.id = 'mtSaveOverlay';
+                el.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);'
+                    + 'display:flex;flex-direction:column;align-items:center;justify-content:center;'
+                    + 'padding:20px;box-sizing:border-box;-webkit-overflow-scrolling:touch;';
+
+                const hint = document.createElement('div');
+                hint.textContent = isImage
+                    ? '长按下方图片 → 选择「保存图片」（微信内需用此方式保存）'
+                    : '微信内无法保存视频文件，可先用系统浏览器打开本网页再下载';
+                hint.style.cssText = 'color:#fff;font-size:14px;line-height:1.6;text-align:center;'
+                    + 'background:rgba(255,255,255,.12);padding:12px 18px;border-radius:12px;'
+                    + 'max-width:92%;margin-bottom:18px;font-family:-apple-system,sans-serif;';
+
+                const close = document.createElement('button');
+                close.textContent = '关闭';
+                close.style.cssText = 'margin-top:20px;padding:10px 34px;border:none;border-radius:10px;'
+                    + 'background:#4f46e5;color:#fff;font-size:15px;font-weight:600;';
+                close.onclick = function () {
+                    el.remove(); overlayEl = null;
+                    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+                };
+
+                el.appendChild(hint);
+
+                if (isImage) {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.style.cssText = 'max-width:100%;max-height:70vh;border-radius:8px;'
+                        + 'display:block;-webkit-touch-callout:default;';
+                    el.appendChild(img);
+                } else {
+                    const video = document.createElement('video');
+                    video.src = url;
+                    video.controls = true;
+                    video.playsInline = true;
+                    video.style.cssText = 'max-width:100%;max-height:66vh;border-radius:8px;display:block;background:#000;';
+                    el.appendChild(video);
                 }
 
-                // 构造一个极简的预览页，告诉用户长按保存
-                const hintText = isImage
-                    ? '图片已打开 · 请长按图片选择「保存图片」'
-                    : '视频已打开 · 可播放观看（微信无法保存视频文件）';
-
-                const html = `<!doctype html><html><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>${filename}</title>
-<style>
-  body{margin:0;background:#000;color:#fff;font-family:-apple-system,sans-serif;
-       min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
-  .hint{font-size:14px;background:rgba(255,255,255,.1);padding:12px 20px;border-radius:10px;margin:16px 0;max-width:90%;text-align:center;}
-  img,video{max-width:100%;max-height:82vh;border-radius:8px;display:block;}
-  .back{position:fixed;top:14px;left:14px;color:#fff;font-size:14px;opacity:.8;}
-</style></head><body>
-  <div class="back" onclick="history.back()">← 返回</div>
-  <div class="hint">${hintText}</div>
-  ${isImage
-      ? '<img src="' + url + '" alt="">'
-      : '<video src="' + url + '" controls playsinline></video>'}
-</body></html>`;
-
-                const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
-                window.open(dataUrl, '_blank');
-                setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+                el.appendChild(close);
+                document.body.appendChild(el);
+                overlayEl = el;
             }
 
             async function saveFile(blob, filename) {
-                // 微信环境：走专用分支
-                if (isWeChat) {
-                    wechatSave(blob, filename);
+                const isImage = /^image\//.test(blob.type);
+                const isVideo = /^video\//.test(blob.type);
+
+                // 压缩包等二进制：移动端一律引导到电脑
+                if (!isImage && !isVideo) {
+                    if (isMobile) { alert('可在电脑浏览器打开网页来下载压缩包'); return; }
+                    desktopDownload(blob, filename);
                     return;
                 }
+
+                // 微信：window.open / a[download] 均被拦截，只能用浮层 + 长按
+                if (isWeChat) { showSaveOverlay(blob, filename); return; }
+
+                // 其它移动端：优先系统分享（可直接存到相册/文件）
                 if (isMobile && navigator.canShare) {
                     try {
-                        const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
+                        const file = new File([blob], filename, { type: blob.type });
                         if (navigator.canShare({ files: [file] })) {
                             await navigator.share({ files: [file], title: filename });
                             return;
@@ -1249,8 +1299,13 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                         if (e && e.name === 'AbortError') return; // 用户取消分享
                     }
                 }
+
+                // 移动端兜底：浮层长按（iOS Safari 对 blob 下载不可靠）
+                if (isMobile) { showSaveOverlay(blob, filename); return; }
+
                 desktopDownload(blob, filename);
             }
+
             window.MT = { isMobile: isMobile, isWeChat: isWeChat, saveFile: saveFile };
         })();
     </script>
@@ -1315,8 +1370,22 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     });
     gNewUpload.addEventListener('click', function () { gFileInput.click(); });
 
+    // 结果已出时，「生成 GIF」降级为次要按钮，避免与主操作「下载 GIF」抢视觉
+    function gSetRestartMode(on) {
+        if (on) {
+            gStartBtn.classList.remove('btn-primary');
+            gStartBtn.classList.add('btn-restart');
+            gStartBtn.textContent = '重新生成';
+        } else {
+            gStartBtn.classList.remove('btn-restart');
+            gStartBtn.classList.add('btn-primary');
+            gStartBtn.textContent = '生成 GIF';
+        }
+    }
+
     async function loadVideo(file) {
         clearErr(); gResultCard.classList.remove('active'); gProgressCard.classList.remove('active');
+        gSetRestartMode(false);
         if (!file.type.startsWith('video/')) { showErr('请选择视频文件'); return; }
         if (gUrl) URL.revokeObjectURL(gUrl);
         gUrl = URL.createObjectURL(file);
@@ -1537,6 +1606,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     async function generate() {
         if (busy || !gUrl) return;
         clearErr(); gResultCard.classList.remove('active');
+        gSetRestartMode(false);
         const t0 = +gStartRange.value, t1 = +gEndRange.value;
         const dur = t1 - t0;
         if (dur < 0.5) { showErr('片段太短，请至少选择 0.5 秒'); return; }
@@ -1599,6 +1669,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             gResultTitle.textContent = ok ? 'GIF 生成成功' : '已压至最小档，仍超 2MB（可缩短片段时长）';
             gResultDetail.innerHTML = '尺寸 <strong>' + bestW + '×' + bestH + '</strong> · ' + outFps.toFixed(1) + ' fps · ' + frames.length + ' 帧 · 大小 <strong>' + fmtSize(size) + '</strong>';
             gResultCard.classList.add('active');
+            gSetRestartMode(true);
             gProgressCard.classList.remove('active');
         } catch (e) {
             gProgressCard.classList.remove('active');
