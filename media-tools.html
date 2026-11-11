@@ -1220,10 +1220,19 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             }
 
             // 页面内浮层：微信会拦截 window.open 与 a[download]，
-            // 但页面里直接渲染 <img> 后长按仍可唤起「保存图片」，这是唯一稳定路径。
+            // 且 blob: 图片长按「保存到手机」会失败，必须转成 base64 data URL，
+            // 微信原生保存/转发才能真正取到图片内容。
             let overlayEl = null;
-            function showSaveOverlay(blob, filename) {
-                const url = URL.createObjectURL(blob);
+            function blobToDataURL(blob) {
+                return new Promise(function (resolve, reject) {
+                    const fr = new FileReader();
+                    fr.onload = function () { resolve(fr.result); };
+                    fr.onerror = reject;
+                    fr.readAsDataURL(blob);
+                });
+            }
+
+            async function showSaveOverlay(blob, filename) {
                 const isImage = /^image\//.test(blob.type);
 
                 if (overlayEl) { overlayEl.remove(); overlayEl = null; }
@@ -1232,45 +1241,48 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 el.id = 'mtSaveOverlay';
                 el.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);'
                     + 'display:flex;flex-direction:column;align-items:center;justify-content:center;'
-                    + 'padding:20px;box-sizing:border-box;-webkit-overflow-scrolling:touch;';
+                    + 'padding:20px;box-sizing:border-box;overflow-y:auto;';
 
                 const hint = document.createElement('div');
                 hint.textContent = isImage
-                    ? '长按下方图片 → 选择「保存图片」（微信内需用此方式保存）'
+                    ? '长按图片 → 选择「保存到手机」或「转发给朋友」'
                     : '微信内无法保存视频文件，可先用系统浏览器打开本网页再下载';
                 hint.style.cssText = 'color:#fff;font-size:14px;line-height:1.6;text-align:center;'
                     + 'background:rgba(255,255,255,.12);padding:12px 18px;border-radius:12px;'
-                    + 'max-width:92%;margin-bottom:18px;font-family:-apple-system,sans-serif;';
+                    + 'max-width:92%;margin-bottom:18px;font-family:-apple-system,sans-serif;flex-shrink:0;';
 
                 const close = document.createElement('button');
                 close.textContent = '关闭';
                 close.style.cssText = 'margin-top:20px;padding:10px 34px;border:none;border-radius:10px;'
-                    + 'background:#4f46e5;color:#fff;font-size:15px;font-weight:600;';
-                close.onclick = function () {
-                    el.remove(); overlayEl = null;
-                    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-                };
+                    + 'background:#4f46e5;color:#fff;font-size:15px;font-weight:600;flex-shrink:0;';
+                close.onclick = function () { el.remove(); overlayEl = null; };
 
                 el.appendChild(hint);
+                document.body.appendChild(el);
+                overlayEl = el;
 
                 if (isImage) {
                     const img = document.createElement('img');
-                    img.src = url;
                     img.style.cssText = 'max-width:100%;max-height:70vh;border-radius:8px;'
                         + 'display:block;-webkit-touch-callout:default;';
                     el.appendChild(img);
+                    // 先渲染浮层再转码，避免大图转 base64 时界面看起来卡住
+                    try {
+                        img.src = await blobToDataURL(blob);
+                    } catch (e) {
+                        img.src = URL.createObjectURL(blob); // 兜底：至少能看能转发
+                    }
                 } else {
+                    const url = URL.createObjectURL(blob);
                     const video = document.createElement('video');
                     video.src = url;
                     video.controls = true;
                     video.playsInline = true;
-                    video.style.cssText = 'max-width:100%;max-height:66vh;border-radius:8px;display:block;background:#000;';
+                    video.style.cssText = 'max-width:100%;max-height:66vh;border-radius:8px;display:block;background:#000;flex-shrink:0;';
                     el.appendChild(video);
                 }
 
                 el.appendChild(close);
-                document.body.appendChild(el);
-                overlayEl = el;
             }
 
             async function saveFile(blob, filename) {
