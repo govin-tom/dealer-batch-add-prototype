@@ -1178,10 +1178,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         })();
     </script>
 
-    <!-- 通用保存：移动端优先系统分享（可存相册/文件），桌面端直接下载 -->
+    <!-- 通用保存：移动端优先系统分享，微信环境用 window.open + 长按保存引导 -->
     <script>
         (function () {
             const isMobile = /Android|iPhone|iPad|iPod|HarmonyOS|Mobile/i.test(navigator.userAgent);
+            const isWeChat = /MicroMessenger/i.test(navigator.userAgent);
+
             function desktopDownload(blob, filename) {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -1189,7 +1191,53 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 document.body.appendChild(a); a.click(); a.remove();
                 setTimeout(function () { URL.revokeObjectURL(url); }, 15000);
             }
+
+            // 微信环境专用：打开原生预览页，用户长按保存
+            function wechatSave(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const isImage = /^image\//.test(blob.type);
+                const isVideo = /^video\//.test(blob.type);
+
+                if (!isImage && !isVideo) {
+                    // zip 等二进制在微信里完全无法处理
+                    alert('微信内无法直接保存压缩包，\n请复制页面链接后，在系统浏览器中打开。');
+                    setTimeout(function () { URL.revokeObjectURL(url); }, 3000);
+                    return;
+                }
+
+                // 构造一个极简的预览页，告诉用户长按保存
+                const hintText = isImage
+                    ? '图片已打开 · 请长按图片选择「保存图片」'
+                    : '视频已打开 · 可播放观看（微信无法保存视频文件）';
+
+                const html = `<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>${filename}</title>
+<style>
+  body{margin:0;background:#000;color:#fff;font-family:-apple-system,sans-serif;
+       min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;}
+  .hint{font-size:14px;background:rgba(255,255,255,.1);padding:12px 20px;border-radius:10px;margin:16px 0;max-width:90%;text-align:center;}
+  img,video{max-width:100%;max-height:82vh;border-radius:8px;display:block;}
+  .back{position:fixed;top:14px;left:14px;color:#fff;font-size:14px;opacity:.8;}
+</style></head><body>
+  <div class="back" onclick="history.back()">← 返回</div>
+  <div class="hint">${hintText}</div>
+  ${isImage
+      ? '<img src="' + url + '" alt="">'
+      : '<video src="' + url + '" controls playsinline></video>'}
+</body></html>`;
+
+                const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(html);
+                window.open(dataUrl, '_blank');
+                setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+            }
+
             async function saveFile(blob, filename) {
+                // 微信环境：走专用分支
+                if (isWeChat) {
+                    wechatSave(blob, filename);
+                    return;
+                }
                 if (isMobile && navigator.canShare) {
                     try {
                         const file = new File([blob], filename, { type: blob.type || 'application/octet-stream' });
@@ -1203,7 +1251,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 }
                 desktopDownload(blob, filename);
             }
-            window.MT = { isMobile: isMobile, saveFile: saveFile };
+            window.MT = { isMobile: isMobile, isWeChat: isWeChat, saveFile: saveFile };
         })();
     </script>
     <!-- gif.js 编码库（内联，本地打开无网络依赖） -->
