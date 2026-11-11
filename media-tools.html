@@ -246,6 +246,10 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         .ratio-btns { display: flex; gap: 6px; flex: 1; flex-wrap: wrap; }
         .ratio-btns button { padding: 6px 12px; border: 1px solid #d1d5db; background: #fff; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #374151; transition: all 0.15s; }
         .ratio-btns button.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+        .custom-ratio { display: flex; align-items: center; gap: 8px; }
+        .custom-ratio input { width: 64px; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-weight: 600; color: #374151; text-align: center; }
+        .custom-ratio input:focus { outline: none; border-color: #4f46e5; }
+        .custom-ratio span { color: #9ca3af; font-weight: 600; }
         .gif-result-img { max-width: 100%; border-radius: 8px; margin-bottom: 14px; display: block; margin-left: auto; margin-right: auto; }
         .upload-zone.compact {
             padding: 36px 20px; min-height: 196px;
@@ -435,6 +439,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                             <button data-ratio="4:3">4:3</button>
                             <button data-ratio="16:9">16:9</button>
                             <button data-ratio="9:16">9:16</button>
+                            <button data-ratio="custom">自定义</button>
+                        </div>
+                    </div>
+                    <div class="control-row" id="gCustomRatioRow" style="display:none">
+                        <label>自定义比例</label>
+                        <div class="custom-ratio">
+                            <input type="number" id="gRatioW" value="3" min="1" max="100" step="1">
+                            <span>:</span>
+                            <input type="number" id="gRatioH" value="4" min="1" max="100" step="1">
                         </div>
                     </div>
                     <div class="control-row">
@@ -470,8 +483,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 </div>
 
                 <p class="tips">
-                    虚线框选定画面区域，时间滑块选定片段（建议 ≤10 秒）。<br>
-                    自动控制在 2MB 内：超过时优先降画质，再降尺寸，最后降帧率。
+                    虚线框选定画面区域，时间滑块选定片段。<br>
+                    自动控制在 500KB 内：超过时依次降画质、降尺寸、降帧率。片段越短，画面越清晰。
                 </p>
             </div>
         </section>
@@ -1441,6 +1454,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         gWorkArea = $('gWorkArea'), gErrorMsg = $('gErrorMsg'),
         gStage = $('gCropStage'), gVideo = $('gPreview'), gBox = $('gCropBox'),
         gMeta = $('gMeta'), gRatioBtns = $('gRatioBtns'),
+        gCustomRatioRow = $('gCustomRatioRow'), gRatioW = $('gRatioW'), gRatioH = $('gRatioH'),
         gStartRange = $('gStartRange'), gEndRange = $('gEndRange'),
         gStartLabel = $('gStartLabel'), gEndLabel = $('gEndLabel'),
         gEstimate = $('gEstimate'),
@@ -1556,14 +1570,38 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     });
 
     /* ---------- 比例与裁剪框 ---------- */
+    function clampRatio(v) {
+        if (!isFinite(v) || v <= 0) return 1;
+        return Math.min(5, Math.max(0.2, v));
+    }
+
+    function applyCustomRatio() {
+        const w = parseInt(gRatioW.value, 10);
+        const h = parseInt(gRatioH.value, 10);
+        if (!w || !h || w < 1 || h < 1) return;
+        ratioVal = clampRatio(w / h);
+        resetCrop();
+    }
+
     gRatioBtns.addEventListener('click', function (e) {
         const btn = e.target.closest('button');
         if (!btn) return;
         gRatioBtns.querySelectorAll('button').forEach(function (b) { b.classList.remove('active'); });
         btn.classList.add('active');
+        if (btn.dataset.ratio === 'custom') {
+            gCustomRatioRow.style.display = '';
+            applyCustomRatio();
+            return;
+        }
+        gCustomRatioRow.style.display = 'none';
         const p = btn.dataset.ratio.split(':');
-        ratioVal = (+p[0]) / (+p[1]);
+        ratioVal = clampRatio((+p[0]) / (+p[1]));
         resetCrop();
+    });
+
+    [gRatioW, gRatioH].forEach(function (inp) {
+        inp.addEventListener('input', applyCustomRatio);
+        inp.addEventListener('change', applyCustomRatio);
     });
 
     function resetCrop() {
@@ -1781,31 +1819,48 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             });
             if (frames.length < 2) throw new Error('采样帧不足，请缩短片段或用 MP4 格式重试');
 
-            // 第二步：编码，超 2MB 自动降档（先保帧率，再降尺寸/画质）
+            // 第二步：编码，目标是 ≤500KB；优先保帧率，再降尺寸，最后才降帧率
             const specs = [
-                { scale: 1, step: 1, quality: 10 },
-                { scale: 1, step: 1, quality: 24 },
-                { scale: 0.85, step: 1, quality: 24 },
-                { scale: 0.75, step: 2, quality: 20 },
-                { scale: 0.6, step: 3, quality: 30 }
+                { scale: 1.00, step: 1, quality: 10 },
+                { scale: 1.00, step: 1, quality: 20 },
+                { scale: 1.00, step: 1, quality: 30 },
+                { scale: 0.90, step: 1, quality: 20 },
+                { scale: 0.90, step: 1, quality: 30 },
+                { scale: 0.80, step: 1, quality: 24 },
+                { scale: 0.80, step: 1, quality: 30 },
+                { scale: 0.70, step: 1, quality: 28 },
+                { scale: 0.60, step: 1, quality: 30 },
+                { scale: 0.50, step: 1, quality: 30 },
+                { scale: 0.50, step: 2, quality: 30 },
+                { scale: 0.40, step: 3, quality: 30 }
             ];
-            let blob = null, size = 0, spec = null;
+            const TARGET_MAX = 500 * 1024;
+            let blob = null, size = 0, spec = null, attempt = 0;
             for (let s = 0; s < specs.length; s++) {
                 if (cancelFlag) throw new Error('已取消');
                 spec = specs[s];
                 bestW = Math.round(W0 * spec.scale / 2) * 2;
                 bestH = Math.round(H0 * spec.scale / 2) * 2;
                 const delay = Math.round(1000 / FPS * spec.step);
-                blob = await encodeGif(frames, spec, bestW, bestH, delay, 0.55 + 0.45 * (s + 1) / specs.length);
+                attempt++;
+                const base = 0.55 + 0.40 * Math.min(1, attempt / 4);
+                blob = await encodeGif(frames, spec, bestW, bestH, delay, base);
                 size = blob.size;
-                if (size <= 2 * 1048576) break;
+                if (size <= TARGET_MAX) break;
+                // 首轮超限后按体积反推所需缩放（体积≈像素数×比例），跳过必然超限的中间档
+                if (attempt === 1) {
+                    const needScale = Math.sqrt(TARGET_MAX / size) * spec.scale * 0.95;
+                    for (let j = s + 1; j < specs.length; j++) {
+                        if (specs[j].scale <= needScale) { s = j - 1; break; }
+                    }
+                }
             }
 
             gBlob = blob;
             gResultImg.src = URL.createObjectURL(blob);
-            const ok = size <= 2 * 1048576;
+            const ok = size <= TARGET_MAX;
             const outFps = FPS / spec.step;
-            gResultTitle.textContent = ok ? 'GIF 生成成功' : '已压至最小档，仍超 2MB（可缩短片段时长）';
+            gResultTitle.textContent = ok ? 'GIF 生成成功' : '已压至最小档，仍超 500KB（可缩短片段时长）';
             gResultDetail.innerHTML = '尺寸 <strong>' + bestW + '×' + bestH + '</strong> · ' + outFps.toFixed(1) + ' fps · ' + frames.length + ' 帧 · 大小 <strong>' + fmtSize(size) + '</strong>';
             gResultCard.classList.add('active');
             gSetRestartMode(true);
