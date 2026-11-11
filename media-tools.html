@@ -1223,12 +1223,68 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             // 且 blob: 图片长按「保存到手机」会失败，必须转成 base64 data URL，
             // 微信原生保存/转发才能真正取到图片内容。
             let overlayEl = null;
+
+            // 微信「保存到手机」对 base64 体积敏感，超过这个长度先降采样再喂给浮层
+            const WECHAT_DATAURL_LIMIT = 1.8 * 1024 * 1024;
+
             function blobToDataURL(blob) {
                 return new Promise(function (resolve, reject) {
                     const fr = new FileReader();
                     fr.onload = function () { resolve(fr.result); };
                     fr.onerror = reject;
                     fr.readAsDataURL(blob);
+                });
+            }
+
+            // 把过大的 base64 反复重编码，直到低于阈值（仅用于微信保存副本，不改动原始下载文件）
+            function shrinkDataURL(dataUrl, maxSide) {
+                return new Promise(function (resolve, reject) {
+                    const im = new Image();
+                    im.onload = function () {
+                        try {
+                            const scale = Math.min(1, maxSide / Math.max(im.naturalWidth, im.naturalHeight));
+                            const c = document.createElement('canvas');
+                            c.width = Math.max(1, Math.round(im.naturalWidth * scale));
+                            c.height = Math.max(1, Math.round(im.naturalHeight * scale));
+                            const g = c.getContext('2d');
+                            g.fillStyle = '#fff';
+                            g.fillRect(0, 0, c.width, c.height);
+                            g.drawImage(im, 0, 0, c.width, c.height);
+                            resolve(c.toDataURL('image/jpeg', 0.92));
+                        } catch (e) { reject(e); }
+                    };
+                    im.onerror = function () { reject(new Error('decode failed')); };
+                    im.src = dataUrl;
+                });
+            }
+
+            // 逐级降档，返回第一个达标的结果；全都不达标则返回最小的那个
+            async function shrinkUnderLimit(dataUrl, limit) {
+                const schedule = [2000, 1600, 1280, 1024, 800];
+                let best = '';
+                for (let i = 0; i < schedule.length; i++) {
+                    const out = await shrinkDataURL(dataUrl, schedule[i]);
+                    if (!best || out.length < best.length) best = out;
+                    if (out.length <= limit) return { src: out, shrunk: true, ok: true };
+                }
+                return { src: best, shrunk: true, ok: best.length <= limit };
+            }
+
+            // 真正加载成功才算数：避免图片裂开却以为没问题
+            function tryLoadImage(img, src) {
+                return new Promise(function (resolve) {
+                    let done = false;
+                    const finish = function (ok) {
+                        if (done) return;
+                        done = true;
+                        img.onload = img.onerror = null;
+                        resolve(ok);
+                    };
+                    img.onload = function () { finish(img.naturalWidth > 0 && img.naturalHeight > 0); };
+                    img.onerror = function () { finish(false); };
+                    img.src = src;
+                    // 兜底超时，防止既不触发 load 也不触发 error
+                    setTimeout(function () { finish(img.naturalWidth > 0); }, 5000);
                 });
             }
 
@@ -1249,7 +1305,15 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                     : '微信内无法保存视频文件，可先用系统浏览器打开本网页再下载';
                 hint.style.cssText = 'color:#fff;font-size:14px;line-height:1.6;text-align:center;'
                     + 'background:rgba(255,255,255,.12);padding:12px 18px;border-radius:12px;'
-                    + 'max-width:92%;margin-bottom:18px;font-family:-apple-system,sans-serif;flex-shrink:0;';
+                    + 'max-width:92%;margin-bottom:10px;font-family:-apple-system,sans-serif;flex-shrink:0;';
+
+                // 兜底指引：长按无菜单时的出口，不用回头问
+                const tips = document.createElement('div');
+                tips.textContent = isImage
+                    ? '若长按无菜单：点右上角 ··· → 在浏览器打开后下载'
+                    : '点右上角 ··· → 在浏览器打开，即可正常下载到手机';
+                tips.style.cssText = 'color:rgba(255,255,255,.55);font-size:12px;line-height:1.5;text-align:center;'
+                    + 'max-width:92%;margin-bottom:16px;font-family:-apple-system,sans-serif;flex-shrink:0;';
 
                 const close = document.createElement('button');
                 close.textContent = '关闭';
@@ -1258,21 +1322,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 close.onclick = function () { el.remove(); overlayEl = null; };
 
                 el.appendChild(hint);
+                el.appendChild(tips);
                 document.body.appendChild(el);
                 overlayEl = el;
 
-                if (isImage) {
-                    const img = document.createElement('img');
-                    img.style.cssText = 'max-width:100%;max-height:70vh;border-radius:8px;'
-                        + 'display:block;-webkit-touch-callout:default;';
-                    el.appendChild(img);
-                    // 先渲染浮层再转码，避免大图转 base64 时界面看起来卡住
-                    try {
-                        img.src = await blobToDataURL(blob);
-                    } catch (e) {
-                        img.src = URL.createObjectURL(blob); // 兜底：至少能看能转发
-                    }
-                } else {
+                if (!isImage) {
                     const url = URL.createObjectURL(blob);
                     const video = document.createElement('video');
                     video.src = url;
@@ -1280,9 +1334,56 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                     video.playsInline = true;
                     video.style.cssText = 'max-width:100%;max-height:66vh;border-radius:8px;display:block;background:#000;flex-shrink:0;';
                     el.appendChild(video);
+                    el.appendChild(close);
+                    return;
                 }
 
+                const img = document.createElement('img');
+                img.style.cssText = 'max-width:100%;max-height:70vh;border-radius:8px;'
+                    + 'display:block;-webkit-touch-callout:default;'
+                    + '-webkit-user-select:auto;user-select:auto;';
+                img.draggable = false;
+                el.appendChild(img);
                 el.appendChild(close);
+
+                // 依次尝试：缩小的 base64 → 原始 base64 → blob URL，任一加载成功即用
+                const note = document.createElement('div');
+                note.style.cssText = 'display:none;color:#fbbf24;font-size:12px;text-align:center;'
+                    + 'margin-top:10px;max-width:92%;font-family:-apple-system,sans-serif;flex-shrink:0;';
+                el.insertBefore(note, close);
+
+                let dataUrl = '';
+                try { dataUrl = await blobToDataURL(blob); } catch (e) { dataUrl = ''; }
+
+                const candidates = [];
+                if (dataUrl) {
+                    if (dataUrl.length > WECHAT_DATAURL_LIMIT) {
+                        try {
+                            const r = await shrinkUnderLimit(dataUrl, WECHAT_DATAURL_LIMIT);
+                            if (r.src && r.src.length < dataUrl.length) {
+                                candidates.push(r.src);
+                                note.textContent = r.ok
+                                    ? '已生成适配副本用于微信保存；如需原图画质，请用电脑下载'
+                                    : '原图过大，已尽量压缩；仍可能保存失败，建议用电脑下载原图';
+                                note.style.display = 'block';
+                            }
+                        } catch (e) { /* 缩不了就用原图 */ }
+                    }
+                    candidates.push(dataUrl);
+                }
+                candidates.push(URL.createObjectURL(blob));
+
+                let loaded = false;
+                for (let i = 0; i < candidates.length; i++) {
+                    if (await tryLoadImage(img, candidates[i])) { loaded = true; break; }
+                }
+
+                if (!loaded) {
+                    img.style.display = 'none';
+                    note.textContent = '图片预览失败，请点右上角 ··· → 在浏览器打开后下载';
+                    note.style.color = '#f87171';
+                    note.style.display = 'block';
+                }
             }
 
             async function saveFile(blob, filename) {
