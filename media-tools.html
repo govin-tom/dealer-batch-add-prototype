@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图片/视频压缩工具</title>
-    <meta name="description" content="小鸡毛很高兴为您服务~">
+    <title>图片 / 视频处理工具</title>
+    <meta name="description" content="图片改尺寸压缩 · 视频压体积 · 视频转 GIF · 全部本地处理">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="图片/视频压缩工具">
-    <meta property="og:description" content="小鸡毛很高兴为您服务~">
+    <meta property="og:title" content="图片 / 视频处理工具">
+    <meta property="og:description" content="图片改尺寸压缩 · 视频压体积 · 视频转 GIF · 全部本地处理">
     <meta property="og:url" content="https://govin-tom.github.io/dealer-batch-add-prototype/media-tools.html">
     <meta property="og:image" content="https://govin-tom.github.io/dealer-batch-add-prototype/share-card.png">
     <meta itemprop="image" content="https://govin-tom.github.io/dealer-batch-add-prototype/share-card.png">
@@ -253,7 +253,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
     <img src="share-card.png" alt="" style="position:absolute;left:-9999px;top:-9999px;width:300px;height:300px;">
     <div class="app">
         <header class="app-header">
-            <h1>图片 / 视频压缩工具</h1>
+            <h1>图片 / 视频处理工具</h1>
             <p>图片改尺寸压缩 · 视频压体积 · 视频转 GIF · 全部本地处理</p>
         </header>
 
@@ -294,7 +294,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                             <option value="preset:small1inch">小一寸 · 260×378</option>
                             <option value="preset:2inch">二寸 · 413×579</option>
                             <option value="preset:small2inch">小二寸 · 413×531</option>
-                            <option value="preset:sscard">社保卡 · 358×441</option>
+                            <option value="preset:sscard">社保卡/身份证 · 358×441</option>
                             <option value="preset:passport">护照 · 390×567</option>
                         </optgroup>
                     </select>
@@ -520,6 +520,11 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         });
 
         function handleFiles(files) {
+            // 选了新文件就清空旧的批量列表，替换预览
+            batchItems.forEach(item => { if (item.url) URL.revokeObjectURL(item.url); });
+            batchItems = [];
+            hideError();
+
             const valid = files.filter(f => /^image\/(png|jpeg|jpg)$/.test(f.type));
             const invalid = files.filter(f => !/^image\/(png|jpeg|jpg)$/.test(f.type));
             if (invalid.length) {
@@ -698,13 +703,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
         });
 
         $('newUpload').addEventListener('click', () => {
-            batchItems.forEach(item => { if (item.url) URL.revokeObjectURL(item.url); });
-            batchItems = [];
-            uploadZone.style.display = 'block';
-            workArea.classList.remove('active');
-            fileInput.value = '';
-            hideError();
-            fileInput.click();
+            fileInput.value = '';   // 确保重新选中同一文件也会触发 change
+            fileInput.click();      // 保留当前预览，用户选新文件后 handleFiles 自动替换
         });
 
         // ---- Processing ----
@@ -738,7 +738,7 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                     'small1inch':  { w: 260, h: 378, name: '小一寸' },
                     '2inch':       { w: 413, h: 579, name: '二寸' },
                     'small2inch':  { w: 413, h: 531, name: '小二寸' },
-                    'sscard':      { w: 358, h: 441, name: '社保卡' },
+                    'sscard':      { w: 358, h: 441, name: '社保卡/身份证' },
                     'passport':    { w: 390, h: 567, name: '护照' }
                 };
                 const ratio = ratioSelect.value;
@@ -940,6 +940,12 @@ https://github.com/nodeca/pako/blob/main/LICENSE
                 resultBlob = null;
                 currentFile = file;
 
+                // 释放上一个视频的 blob URL，避免内存泄漏
+                const old = previewVideo.src;
+                if (old && old.startsWith('blob:')) {
+                    try { URL.revokeObjectURL(old); } catch (e) {}
+                }
+
                 const url = URL.createObjectURL(file);
                 previewVideo.src = url;
 
@@ -1002,16 +1008,8 @@ https://github.com/nodeca/pako/blob/main/LICENSE
             // ---- Reset ----
             $('vNewUpload').addEventListener('click', () => {
                 if (processing) return;
-                workArea.classList.remove('active');
-                uploadZone.style.display = 'block';
-                previewVideo.removeAttribute('src');
-                previewVideo.load();
-                fileInput.value = '';
-                resultCard.classList.remove('active');
-                resultBlob = null;
-                currentFile = null;
-                hideError();
-                fileInput.click();
+                fileInput.value = '';   // 确保重新选中同一文件也会触发 change
+                fileInput.click();      // 保留当前预览，用户选新文件后 loadVideo 自动替换
             });
 
             // ---- Compress ----
