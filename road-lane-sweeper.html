@@ -276,6 +276,17 @@
   }
   .sound-toggle:hover { color:#2f7dff; border-color:#2f7dff; }
 
+  /* 手机 / 窄屏：状态卡移到顶部，避免遮挡底部活动的角色 */
+  @media (max-width: 900px) {
+    .hud-bottom {
+      left:0; right:0; bottom:auto; top:92px;
+      justify-content:center; gap:6px;
+    }
+    .stat { padding:5px 9px; font-size:11px; border-radius:9px; gap:5px; }
+    .stat b { font-size:15px; min-width:16px; }
+    .stat .dot { width:7px; height:7px; }
+  }
+
   .lvl-type-tag {
     position:absolute; top:64px; left:50%; transform:translateX(-50%);
     background:#fff; border:2px solid #2f7dff; border-radius:99px;
