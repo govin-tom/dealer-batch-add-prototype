@@ -15,7 +15,7 @@
   body {
     font-family: "PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,-apple-system,sans-serif;
     color:#1a2b4c; user-select:none; cursor:crosshair;
-    touch-action:none;
+    touch-action:none; -webkit-touch-callout:none;
   }
   #app { position:fixed; inset:0; }
   canvas#game {
@@ -3260,29 +3260,48 @@
     const wx = (px - W / 2) / PX;
     return clamp(wx, -CFG.roadHalf * 0.92, CFG.roadHalf * 0.92);
   }
+  // 触屏拖动：优先走 touch 事件（微信 X5 / iOS / 旧安卓对 pointermove 支持不一致）
+  let touchDragging = false;
+  function touchToX(e) {
+    if (!e.touches || !e.touches.length) return null;
+    return pointerWorldX(e.touches[0].clientX);
+  }
+  cvs.addEventListener('touchstart', (e) => {
+    ensureAudio();
+    if (S.mode !== 'playing') return;
+    const x = touchToX(e);
+    if (x === null) return;
+    touchDragging = true;
+    playerTargetX = x;
+    e.preventDefault();
+  }, { passive: false });
+  cvs.addEventListener('touchmove', (e) => {
+    if (!touchDragging) return;
+    const x = touchToX(e);
+    if (x === null) return;
+    if (S.mode === 'playing') playerTargetX = x;
+    e.preventDefault();
+  }, { passive: false });
+  const endTouch = () => { touchDragging = false; };
+  cvs.addEventListener('touchend', endTouch);
+  cvs.addEventListener('touchcancel', endTouch);
+  cvs.addEventListener('contextmenu', (e) => e.preventDefault());
+
+  // 鼠标 / 触控笔（触屏交给上面的 touch 事件，避免重复处理）
   cvs.addEventListener('pointermove', (e) => {
+    if (e.pointerType === 'touch') return;
     if (S.mode !== 'playing') return;
     playerTargetX = pointerWorldX(e.clientX);
   });
   cvs.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'touch') return;
     ensureAudio();
     if (S.mode === 'playing') {
       playerTargetX = pointerWorldX(e.clientX);
-      // 捕获指针：手指拖出画布也继续跟随
+      // 捕获指针：拖出画布也继续跟随
       if (cvs.setPointerCapture) { try { cvs.setPointerCapture(e.pointerId); } catch (err) {} }
     }
   });
-  // 旧机型兜底：不支持 Pointer Events 时用 touch 事件
-  if (!window.PointerEvent) {
-    const handleTouch = (e) => {
-      if (!e.touches || !e.touches.length) return;
-      if (S.mode !== 'playing') return;
-      playerTargetX = pointerWorldX(e.touches[0].clientX);
-      e.preventDefault();
-    };
-    cvs.addEventListener('touchstart', (e) => { ensureAudio(); handleTouch(e); }, { passive: false });
-    cvs.addEventListener('touchmove', handleTouch, { passive: false });
-  }
   window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
     if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
