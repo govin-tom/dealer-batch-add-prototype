@@ -11,13 +11,17 @@
 <meta property="og:image" content="https://govin-tom.github.io/dealer-batch-add-prototype/piggy-run-share.png">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-  html, body { width:100%; height:100%; overflow:hidden; background:#dff1ff; }
+  html, body { width:100%; height:100%; overflow:hidden; background:#dff1ff; overscroll-behavior:none; }
   body {
     font-family: "PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,-apple-system,sans-serif;
     color:#1a2b4c; user-select:none; cursor:crosshair;
+    touch-action:none;
   }
   #app { position:fixed; inset:0; }
-  canvas#game { position:absolute; inset:0; width:100%; height:100%; display:block; }
+  canvas#game {
+    position:absolute; inset:0; width:100%; height:100%; display:block;
+    touch-action:none;   /* 允许手指拖动角色，不被浏览器当成滚动/缩放 */
+  }
 
   .hud { position:absolute; inset:0; pointer-events:none; z-index:5; }
   .hud-top {
@@ -3262,8 +3266,23 @@
   });
   cvs.addEventListener('pointerdown', (e) => {
     ensureAudio();
-    if (S.mode === 'playing') playerTargetX = pointerWorldX(e.clientX);
+    if (S.mode === 'playing') {
+      playerTargetX = pointerWorldX(e.clientX);
+      // 捕获指针：手指拖出画布也继续跟随
+      if (cvs.setPointerCapture) { try { cvs.setPointerCapture(e.pointerId); } catch (err) {} }
+    }
   });
+  // 旧机型兜底：不支持 Pointer Events 时用 touch 事件
+  if (!window.PointerEvent) {
+    const handleTouch = (e) => {
+      if (!e.touches || !e.touches.length) return;
+      if (S.mode !== 'playing') return;
+      playerTargetX = pointerWorldX(e.touches[0].clientX);
+      e.preventDefault();
+    };
+    cvs.addEventListener('touchstart', (e) => { ensureAudio(); handleTouch(e); }, { passive: false });
+    cvs.addEventListener('touchmove', handleTouch, { passive: false });
+  }
   window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
     if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
